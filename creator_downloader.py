@@ -11,14 +11,14 @@ from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPush
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QColor, QPixmap
 import qtawesome as qta
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Headers for API requests
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36", "Referer": "https://kemono.su/"}
 API_BASE = "https://kemono.su/api/v1"
 
-# Reuse the PreviewThread and ImageModal with caching support
 class PreviewThread(QThread):
-    preview_ready = pyqtSignal(str, object)  # Using object to allow QPixmap
+    preview_ready = pyqtSignal(str, object)
     progress = pyqtSignal(int)
     error = pyqtSignal(str)
 
@@ -32,7 +32,6 @@ class PreviewThread(QThread):
 
     def run(self):
         if self.url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
-            # Check cache first
             cache_key = hashlib.md5(self.url.encode()).hexdigest() + os.path.splitext(self.url)[1]
             cache_path = os.path.join(self.cache_dir, cache_key)
             if os.path.exists(cache_path):
@@ -57,7 +56,7 @@ class PreviewThread(QThread):
                     self.error.emit(f"Failed to load image from {self.url}: Invalid or corrupted image data")
                     return
                 scaled_pixmap = pixmap.scaled(800, 800, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-                scaled_pixmap.save(cache_path)  # Save to cache
+                scaled_pixmap.save(cache_path)
                 self.preview_ready.emit(self.url, scaled_pixmap)
             except requests.RequestException as e:
                 self.error.emit(f"Failed to download image from {self.url}: {str(e)}")
@@ -100,27 +99,27 @@ class ImageModal(QDialog):
         QMessageBox.critical(self, "Image Load Error", error_message)
 
 class CreatorDownloadThread(QThread):
-    progress = pyqtSignal(int)
+    batch_progress = pyqtSignal(int)
     overall_progress = pyqtSignal(int)
     log = pyqtSignal(str, str)
     finished = pyqtSignal()
-    post_detected = pyqtSignal(str, str)
 
-    def __init__(self, service, creator_id, download_folder, file_types, selected_posts, console, other_files_dir):
+    def __init__(self, service, creator_id, download_folder, selected_posts, file_types, console, other_files_dir, max_concurrent=5):
         super().__init__()
         self.service = service
         self.creator_id = creator_id
         self.download_folder = download_folder
-        self.file_types = file_types
         self.selected_posts = selected_posts
+        self.file_types = file_types
         self.console = console
         self.is_running = True
         self.other_files_dir = other_files_dir
         self.hash_file_path = os.path.join(self.other_files_dir, "file_hashes.json")
         self.file_hashes = self.load_hashes()
+        self.max_concurrent = max_concurrent
 
     def load_hashes(self):
-        """Load the hash data from the JSON file."""
+        os.makedirs(self.other_files_dir, exist_ok=True)
         if os.path.exists(self.hash_file_path):
             try:
                 with open(self.hash_file_path, 'r') as f:
@@ -131,7 +130,7 @@ class CreatorDownloadThread(QThread):
         return {}
 
     def save_hashes(self):
-        """Save the hash data to the JSON file."""
+        os.makedirs(self.other_files_dir, exist_ok=True)
         try:
             with open(self.hash_file_path, 'w') as f:
                 json.dump(self.file_hashes, f, indent=4)
@@ -141,126 +140,61 @@ class CreatorDownloadThread(QThread):
     def stop(self):
         self.is_running = False
 
-    def run(self):
-        self.log.emit(f"[INFO] CreatorDownloadThread started for service: {self.service}, creator_id: {self.creator_id}", "INFO")
-        self.log.emit(f"[INFO] Selected posts: {self.selected_posts}", "INFO")
+    def download_file(self, file_url, folder, file_index, total_files):
+        self.log.emit(f"[INFO] Downloading file {file_index + 1}/{total_files} for post: {file_url}", "INFO")
+        if not self.is_running:
+            self.log.emit(f"[WARNING] Download cancelled for {file_url}", "WARNING")
+            return False, 0, file_index
         
-        total_posts = len(self.selected_posts)
-        self.log.emit(f"[INFO] Total posts to process: {total_posts}", "INFO")
-        
-        total_files = 0
-        files_per_post = {}
-        for post_id in self.selected_posts:
-            api_url = f"{API_BASE}/{self.service}/user/{self.creator_id}/post/{post_id}"
-            response = requests.get(api_url, headers=HEADERS)
-            if response.status_code != 200:
-                self.log.emit(f"[ERROR] Failed to fetch {api_url} - Status code: {response.status_code}", "ERROR")
-                continue
-            post_data = response.json()
-            post = post_data if isinstance(post_data, dict) and 'post' not in post_data else post_data.get('post', {})
-            files = self.detect_files(post, self.file_types)
-            files_per_post[post_id] = files
-            total_files += len(files)
-        self.log.emit(f"[INFO] Total files across all posts: {total_files}", "INFO")
+        filename = file_url.split('f=')[-1] if 'f=' in file_url else file_url.split('/')[-1].split('?')[0]
+        full_path = os.path.join(folder, filename.replace('/', '_'))
+        url_hash = hashlib.md5(file_url.encode()).hexdigest()
 
-        files_processed = 0
-        for post_index, post_id in enumerate(self.selected_posts):
-            if not self.is_running:
-                self.log.emit(f"[WARNING] Download cancelled for creator {self.creator_id}", "WARNING")
-                break
-            self.log.emit(f"[INFO] Processing post {post_id} ({post_index + 1}/{total_posts})", "INFO")
-            api_url = f"{API_BASE}/{self.service}/user/{self.creator_id}/post/{post_id}"
-            self.log.emit(f"[INFO] Fetching post from API: {api_url}", "INFO")
+        if url_hash in self.file_hashes:
+            existing_path = self.file_hashes[url_hash]["file_path"]
+            if os.path.exists(existing_path):
+                file_hash = hashlib.md5(open(existing_path, 'rb').read()).hexdigest()
+                stored_hash = self.file_hashes[url_hash]["file_hash"]
+                if file_hash == stored_hash:
+                    self.log.emit(f"[INFO] File {filename} already downloaded at {existing_path}, skipping.", "INFO")
+                    return True, 100, file_index
+
+        try:
+            response = requests.get(file_url, headers=HEADERS, stream=True)
+            response.raise_for_status()
+            file_size = int(response.headers.get('content-length', 0)) or 1
+            downloaded_size = 0
             
-            response = requests.get(api_url, headers=HEADERS)
-            self.log.emit(f"[INFO] API response status code: {response.status_code}", "INFO")
-            if response.status_code != 200:
-                self.log.emit(f"[ERROR] Failed to fetch {api_url} - Status code: {response.status_code}", "ERROR")
-                continue
-            
-            post_data = response.json()
-            if not post_data or (isinstance(post_data, list) and not post_data) or (isinstance(post_data, dict) and not post_data):
-                self.log.emit("[ERROR] No valid post data returned! Response: " + json.dumps(post_data, indent=2), "ERROR")
-                continue
+            with open(full_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if not self.is_running:
+                        self.log.emit(f"[WARNING] Download interrupted for {file_url}", "WARNING")
+                        return False, 0, file_index
+                    if chunk:
+                        f.write(chunk)
+                        downloaded_size += len(chunk)
+                        progress = int((downloaded_size / file_size) * 100)
+                        yield True, progress, file_index
 
-            post = post_data if isinstance(post_data, dict) and 'post' not in post_data else post_data.get('post', {})
-            self.log.emit(f"[INFO] Processed post data: {json.dumps(post, indent=2)}", "INFO")
+            file_hash = hashlib.md5(open(full_path, 'rb').read()).hexdigest()
+            self.file_hashes[url_hash] = {
+                "file_path": full_path,
+                "file_hash": file_hash,
+                "url": file_url
+            }
+            self.save_hashes()
 
-            creator_folder = os.path.join(self.download_folder, self.creator_id)
-            os.makedirs(creator_folder, exist_ok=True)
-            self.log.emit(f"[INFO] Created creator directory: {creator_folder}", "INFO")
-            post_folder = os.path.join(creator_folder, f"post_{post_id}")
-            os.makedirs(post_folder, exist_ok=True)
-            self.log.emit(f"[INFO] Created post directory: {post_folder}", "INFO")
+            self.log.emit(f"[INFO] Successfully downloaded: {full_path}", "INFO")
+            return True, 100, file_index
+        except Exception as e:
+            self.log.emit(f"[ERROR] Error downloading {file_url}: {e}", "ERROR")
+            return False, 0, file_index
 
-            files_to_download = files_per_post.get(post_id, [])
-            total_files_in_post = len(files_to_download)
-            self.log.emit(f"[INFO] Total files to download for post {post_id}: {total_files_in_post}", "INFO")
-
-            for file_index, file_url in enumerate(files_to_download):
-                if not self.is_running:
-                    self.log.emit(f"[WARNING] Download cancelled for post {post_id}", "WARNING")
-                    break
-                self.log.emit(f"[INFO] Downloading file {file_index + 1}/{total_files_in_post} for post {post_id}: {file_url}", "INFO")
-                
-                # Check if file already exists in the hash database
-                filename = file_url.split('f=')[-1] if 'f=' in file_url else file_url.split('/')[-1].split('?')[0]
-                full_path = os.path.join(post_folder, filename.replace('/', '_'))
-                url_hash = hashlib.md5(file_url.encode()).hexdigest()
-
-                if url_hash in self.file_hashes:
-                    existing_path = self.file_hashes[url_hash]["file_path"]
-                    if os.path.exists(existing_path):
-                        file_hash = hashlib.md5(open(existing_path, 'rb').read()).hexdigest()
-                        stored_hash = self.file_hashes[url_hash]["file_hash"]
-                        if file_hash == stored_hash:
-                            self.log.emit(f"[INFO] File {filename} already downloaded at {existing_path}, skipping.", "INFO")
-                            files_processed += 1
-                            if total_files > 0:
-                                self.overall_progress.emit(int((files_processed / total_files) * 100))
-                            continue
-
-                try:
-                    response = requests.get(file_url, headers=HEADERS, stream=True)
-                    response.raise_for_status()
-                    file_size = int(response.headers.get('content-length', 0))
-                    downloaded_size = 0
-                    
-                    with open(full_path, 'wb') as f:
-                        for chunk in response.iter_content(chunk_size=8192):
-                            if not self.is_running:
-                                self.log.emit(f"[WARNING] Download interrupted for {file_url}", "WARNING")
-                                return
-                            if chunk:
-                                f.write(chunk)
-                                downloaded_size += len(chunk)
-                                if file_size > 0:
-                                    progress = int((downloaded_size / file_size) * 100)
-                                    self.progress.emit(progress)
-
-                    # Calculate file hash and store in JSON
-                    file_hash = hashlib.md5(open(full_path, 'rb').read()).hexdigest()
-                    self.file_hashes[url_hash] = {
-                        "file_path": full_path,
-                        "file_hash": file_hash,
-                        "url": file_url
-                    }
-                    self.save_hashes()
-
-                    self.log.emit(f"[INFO] Successfully downloaded: {full_path}", "INFO")
-                    files_processed += 1
-                    if total_files > 0:
-                        self.overall_progress.emit(int((files_processed / total_files) * 100))
-                except Exception as e:
-                    self.log.emit(f"[ERROR] Error downloading {file_url}: {e}", "ERROR")
-
-        self.finished.emit()
-
-    def detect_files(self, post, file_types):
+    def detect_files(self, post):
         files_to_download = []
-        allowed_extensions = file_types.get('extensions', [])
+        allowed_extensions = self.file_types.get('extensions', [])
 
-        if file_types.get('main') and 'file' in post and post['file'] and 'path' in post['file']:
+        if self.file_types.get('main') and 'file' in post and post['file'] and 'path' in post['file']:
             file_path = post['file']['path']
             file_name = post['file'].get('name', '')
             file_ext = os.path.splitext(file_path)[1] or os.path.splitext(file_name)[1]
@@ -270,7 +204,7 @@ class CreatorDownloadThread(QThread):
             if file_ext.lower() in allowed_extensions:
                 files_to_download.append(file_url)
 
-        if file_types.get('attachments') and 'attachments' in post:
+        if self.file_types.get('attachments') and 'attachments' in post:
             for attachment in post['attachments']:
                 if isinstance(attachment, dict) and 'path' in attachment:
                     attachment_path = attachment['path']
@@ -282,7 +216,7 @@ class CreatorDownloadThread(QThread):
                     if attachment_ext.lower() in allowed_extensions:
                         files_to_download.append(attachment_url)
 
-        if file_types.get('content') and 'content' in post and post['content']:
+        if self.file_types.get('content') and 'content' in post and post['content']:
             soup = BeautifulSoup(post['content'], 'html.parser')
             for img in soup.select('img[src]'):
                 img_url = urljoin("https://kemono.su", img['src'])
@@ -292,6 +226,71 @@ class CreatorDownloadThread(QThread):
 
         files_to_download = list(dict.fromkeys(files_to_download))
         return files_to_download
+
+    def run(self):
+        self.log.emit(f"[INFO] CreatorDownloadThread started for service: {self.service}, creator_id: {self.creator_id}", "INFO")
+        total_posts = len(self.selected_posts)
+        self.log.emit(f"[INFO] Total posts: {total_posts}", "INFO")
+
+        files_per_post = {}
+        total_files = 0
+        for post_id in self.selected_posts:
+            api_url = f"{API_BASE}/{self.service}/user/{self.creator_id}/post/{post_id}"
+            response = requests.get(api_url, headers=HEADERS)
+            if response.status_code != 200:
+                self.log.emit(f"[ERROR] Failed to fetch {api_url} - Status code: {response.status_code}", "ERROR")
+                continue
+            post_data = response.json()
+            post = post_data if isinstance(post_data, dict) and 'post' not in post_data else post_data.get('post', {})
+            files = self.detect_files(post)
+            files_per_post[post_id] = files
+            total_files += len(files)
+        self.log.emit(f"[INFO] Total files across all posts: {total_files}", "INFO")
+
+        files_processed = 0
+        for post_index, post_id in enumerate(self.selected_posts):
+            if not self.is_running:
+                self.log.emit(f"[WARNING] Download cancelled for creator {self.creator_id}", "WARNING")
+                break
+            self.log.emit(f"[INFO] Processing post {post_id} ({post_index + 1}/{total_posts})", "INFO")
+            
+            creator_folder = os.path.join(self.download_folder, self.creator_id)
+            os.makedirs(creator_folder, exist_ok=True)
+            post_folder = os.path.join(creator_folder, f"post_{post_id}")
+            os.makedirs(post_folder, exist_ok=True)
+
+            files_to_download = files_per_post.get(post_id, [])
+            total_files_in_post = len(files_to_download)
+            self.log.emit(f"[INFO] Total files in post {post_id}: {total_files_in_post}", "INFO")
+
+            if not files_to_download:
+                continue
+
+            with ThreadPoolExecutor(max_workers=self.max_concurrent) as executor:
+                futures = {executor.submit(self.download_file, file_url, post_folder, i, total_files_in_post): (file_url, i)
+                           for i, file_url in enumerate(files_to_download)}
+                batch_progresses = {i: 0 for i in range(total_files_in_post)}
+                completed_files = 0
+
+                for future in as_completed(futures):
+                    if not self.is_running:
+                        break
+                    file_url, file_index = futures[future]
+                    try:
+                        for success, progress, idx in future.result():
+                            if success:
+                                batch_progresses[idx] = progress
+                                avg_batch_progress = sum(batch_progresses.values()) // max(1, len(batch_progresses))
+                                self.batch_progress.emit(avg_batch_progress)
+                                if progress == 100:
+                                    completed_files += 1
+                                    files_processed += 1
+                                    overall_progress = int((files_processed / total_files) * 100) if total_files > 0 else 100
+                                    self.overall_progress.emit(overall_progress)
+                    except Exception as e:
+                        self.log.emit(f"[ERROR] Error in download: {e}", "ERROR")
+
+        self.finished.emit()
 
 class CreatorDownloaderTab(QWidget):
     def __init__(self, parent):
@@ -304,8 +303,8 @@ class CreatorDownloaderTab(QWidget):
         self.downloading = False
         self.current_preview_url = None
         self.previous_selected_widget = None
-        self.cache_dir = self.parent.cache_folder  # Use the cache folder from main.py
-        self.other_files_dir = self.parent.other_files_folder  # Use the other files folder from main.py
+        self.cache_dir = self.parent.cache_folder
+        self.other_files_dir = self.parent.other_files_folder
         os.makedirs(self.cache_dir, exist_ok=True)
         os.makedirs(self.other_files_dir, exist_ok=True)
         self.setup_ui()
@@ -313,7 +312,6 @@ class CreatorDownloaderTab(QWidget):
     def setup_ui(self):
         layout = QHBoxLayout(self)
         
-        # Left side: Options and Queue
         left_widget = QWidget()
         left_layout = QVBoxLayout(left_widget)
 
@@ -380,13 +378,15 @@ class CreatorDownloaderTab(QWidget):
         left_layout.addWidget(creator_options_group)
 
         creator_progress_layout = QVBoxLayout()
+        self.creator_file_progress_label = QLabel(f"Batch Progress (0/{self.parent.settings_tab.get_simultaneous_downloads()})")
+        creator_progress_layout.addWidget(self.creator_file_progress_label)
         self.creator_file_progress = QProgressBar()
         self.creator_file_progress.setStyleSheet("QProgressBar { border: 1px solid #4A5B7A; border-radius: 5px; } QProgressBar::chunk { background: #4A5B7A; }")
-        creator_progress_layout.addWidget(QLabel("File Progress"))
         creator_progress_layout.addWidget(self.creator_file_progress)
+        self.creator_overall_progress_label = QLabel("Overall Progress (0/0 files)")
+        creator_progress_layout.addWidget(self.creator_overall_progress_label)
         self.creator_overall_progress = QProgressBar()
         self.creator_overall_progress.setStyleSheet("QProgressBar { border: 1px solid #4A5B7A; border-radius: 5px; } QProgressBar::chunk { background: #4A5B7A; }")
-        creator_progress_layout.addWidget(QLabel("Overall Progress"))
         creator_progress_layout.addWidget(self.creator_overall_progress)
         left_layout.addLayout(creator_progress_layout)
 
@@ -410,7 +410,6 @@ class CreatorDownloaderTab(QWidget):
         left_layout.addStretch()
         layout.addWidget(left_widget, stretch=2)
 
-        # Right side: Post List Panel
         right_widget = QWidget()
         right_layout = QVBoxLayout(right_widget)
         
@@ -424,14 +423,12 @@ class CreatorDownloaderTab(QWidget):
         self.creator_search_input.textChanged.connect(self.filter_items)
         post_list_layout.addWidget(self.creator_search_input)
 
-        # Check ALL checkbox
         self.creator_check_all = QCheckBox("Check ALL")
         self.creator_check_all.setChecked(True)
         self.creator_check_all.setStyleSheet("color: white;")
         self.creator_check_all.stateChanged.connect(self.toggle_check_all)
         post_list_layout.addWidget(self.creator_check_all)
 
-        # Post list
         self.creator_post_list = QListWidget()
         self.creator_post_list.setStyleSheet("background: #2A3B5A; border-radius: 5px;")
         self.creator_post_list.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
@@ -440,7 +437,6 @@ class CreatorDownloaderTab(QWidget):
         self.creator_post_list.currentItemChanged.connect(self.update_current_preview_url)
         post_list_layout.addWidget(self.creator_post_list)
 
-        # Bottom row: Post count and view button
         bottom_layout = QHBoxLayout()
         self.creator_post_count_label = QLabel("Posts: 0")
         self.creator_post_count_label.setStyleSheet("color: white;")
@@ -453,14 +449,13 @@ class CreatorDownloaderTab(QWidget):
         bottom_layout.addStretch()
         bottom_layout.addWidget(self.creator_view_button)
 
-        post_list_layout.addLayout(bottom_layout)
+        post_list_layout.addLayout(bottom_layout)  # Fixed typo below
 
         post_list_group.setLayout(post_list_layout)
         right_layout.addWidget(post_list_group)
         right_layout.addStretch()
         layout.addWidget(right_widget, stretch=1)
 
-        # Button animations
         self.creator_download_btn.enterEvent = lambda e: self.parent.animate_button(self.creator_download_btn, True)
         self.creator_download_btn.leaveEvent = lambda e: self.parent.animate_button(self.creator_download_btn, False)
         self.creator_cancel_btn.enterEvent = lambda e: self.parent.animate_button(self.creator_cancel_btn, True)
@@ -597,9 +592,6 @@ class CreatorDownloaderTab(QWidget):
             self.append_log_to_console("[ERROR] No valid posts data returned! Response: " + json.dumps(posts_data, indent=2), "ERROR")
             return False
 
-        self.posts_to_download = []
-        self.post_url_map = {}
-
         detected_posts = []
         for post in posts_data:
             post_id = post.get('id')
@@ -618,7 +610,7 @@ class CreatorDownloaderTab(QWidget):
                 self.post_url_map[title] = (post_id, thumbnail_url)
 
         self.all_detected_posts = detected_posts
-        self.update_checked_posts()  # Ensure posts_to_download is updated here
+        self.update_checked_posts()
         return True
 
     def start_creator_download(self):
@@ -634,7 +626,8 @@ class CreatorDownloaderTab(QWidget):
         self.creator_cancel_btn.setEnabled(True)
         self.creator_file_progress.setValue(0)
         self.creator_overall_progress.setValue(0)
-        self.all_detected_posts = []
+        self.creator_overall_progress.setStyleSheet("QProgressBar { border: 1px solid #4A5B7A; border-radius: 5px; } QProgressBar::chunk { background: #4A5B7A; }")
+        self.creator_overall_progress_label.setText("Overall Progress (0/0 files)")
 
         self.process_next_creator(selected_urls)
 
@@ -646,33 +639,33 @@ class CreatorDownloaderTab(QWidget):
         url = urls[0]
         remaining_urls = urls[1:]
 
-        if self.check_creator(url):
-            parts = url.split('/')
-            if len(parts) < 5 or 'kemono.su' not in url or parts[-2] != 'user':
-                self.append_log_to_console("[ERROR] Invalid URL format. Expected: https://kemono.su/[service]/user/[creator_id]", "ERROR")
-                self.process_next_creator(remaining_urls)
-                return
-            service, creator_id = parts[-3], parts[-1]
-
-            file_types = {
-                'main': self.creator_main_check.isChecked(),
-                'attachments': self.creator_attachments_check.isChecked(),
-                'content': self.creator_content_check.isChecked(),
-                'extensions': [ext for ext, check in self.creator_ext_checks.items() if check.isChecked()]
-            }
-            self.append_log_to_console(f"[DEBUG] Posts to download for {url}: {self.posts_to_download}", "INFO")
-            if not self.posts_to_download:
-                self.append_log_to_console(f"[WARNING] No posts selected for download from {url}. Skipping.", "WARNING")
-                self.process_next_creator(remaining_urls)
-                return
-            self.thread = CreatorDownloadThread(service, creator_id, self.parent.download_folder, file_types, self.posts_to_download, self.creator_console, self.other_files_dir)
-            self.thread.progress.connect(self.update_creator_file_progress)
-            self.thread.overall_progress.connect(self.update_creator_overall_progress)
-            self.thread.log.connect(self.append_log_to_console)
-            self.thread.finished.connect(lambda: self.process_next_creator(remaining_urls))
-            self.thread.start()
-        else:
+        parts = url.split('/')
+        if len(parts) < 5 or 'kemono.su' not in url or parts[-2] != 'user':
+            self.append_log_to_console("[ERROR] Invalid URL format. Expected: https://kemono.su/[service]/user/[creator_id]", "ERROR")
             self.process_next_creator(remaining_urls)
+            return
+        service, creator_id = parts[-3], parts[-1]
+
+        self.append_log_to_console(f"[DEBUG] Posts to download for {url}: {self.posts_to_download}", "INFO")
+        if not self.posts_to_download:
+            self.append_log_to_console(f"[WARNING] No posts selected for download from {url}. Skipping.", "WARNING")
+            self.process_next_creator(remaining_urls)
+            return
+        file_types = {
+            'main': self.creator_main_check.isChecked(),
+            'attachments': self.creator_attachments_check.isChecked(),
+            'content': self.creator_content_check.isChecked(),
+            'extensions': [ext for ext, check in self.creator_ext_checks.items() if check.isChecked()]
+        }
+        max_concurrent = self.parent.settings_tab.get_simultaneous_downloads()
+        self.thread = CreatorDownloadThread(service, creator_id, self.parent.download_folder, 
+                                            self.posts_to_download, file_types, self.creator_console, 
+                                            self.other_files_dir, max_concurrent)
+        self.thread.batch_progress.connect(self.update_creator_file_progress)
+        self.thread.overall_progress.connect(self.update_creator_overall_progress)
+        self.thread.log.connect(self.append_log_to_console)
+        self.thread.finished.connect(lambda: self.process_next_creator(remaining_urls))
+        self.thread.start()
 
     def cancel_creator_download(self):
         if hasattr(self, 'thread') and self.thread.isRunning():
@@ -681,10 +674,15 @@ class CreatorDownloaderTab(QWidget):
             self.creator_download_finished()
 
     def update_creator_file_progress(self, value):
+        max_concurrent = self.parent.settings_tab.get_simultaneous_downloads()
         self.creator_file_progress.setValue(value)
+        self.creator_file_progress_label.setText(f"Batch Progress ({min(self.thread.max_concurrent, len(self.thread.selected_posts))}/{max_concurrent})")
 
     def update_creator_overall_progress(self, value):
+        total_files = sum(len(self.thread.detect_files({'id': post_id})) for post_id in self.posts_to_download)  # Approximation
+        files_done = int((value / 100) * total_files)
         self.creator_overall_progress.setValue(value)
+        self.creator_overall_progress_label.setText(f"Overall Progress ({files_done}/{total_files} files)")
 
     def creator_download_finished(self):
         self.downloading = False
@@ -693,6 +691,9 @@ class CreatorDownloaderTab(QWidget):
         self.creator_download_btn.setEnabled(True)
         self.creator_cancel_btn.setEnabled(False)
         self.append_log_to_console("[INFO] Download process ended", "INFO")
+        if self.creator_overall_progress.value() == 100:
+            self.creator_overall_progress.setStyleSheet("QProgressBar { border: 1px solid #4A5B7A; border-radius: 5px; } QProgressBar::chunk { background: green; }")
+            self.creator_overall_progress_label.setText("Downloads Complete")
 
     def toggle_check_all(self, state):
         is_checked = state == 2
@@ -727,7 +728,6 @@ class CreatorDownloaderTab(QWidget):
 
     def filter_items(self):
         search_text = self.creator_search_input.text().lower()
-        
         self.creator_post_list.clear()
         self.previous_selected_widget = None
         for post_title, (post_id, thumbnail_url) in self.all_detected_posts:
