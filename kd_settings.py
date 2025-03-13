@@ -6,7 +6,7 @@ from PyQt6.QtCore import Qt, QSettings, pyqtSignal
 from PyQt6.QtGui import QColor
 
 class SettingsTab(QWidget):
-    settings_applied = pyqtSignal()  # New signal to notify when settings are applied
+    settings_applied = pyqtSignal()
 
     def __init__(self, parent):
         super().__init__()
@@ -16,7 +16,6 @@ class SettingsTab(QWidget):
             "base_folder_name": "Kemono Downloader",
             "base_directory": os.getcwd(),
             "simultaneous_downloads": 5,
-            "auto_start_downloads": False,
             "show_notifications": True,
             "theme_color": "#1A2A44"
         }
@@ -29,7 +28,6 @@ class SettingsTab(QWidget):
         settings_dict["base_folder_name"] = self.qsettings.value("base_folder_name", self.default_settings["base_folder_name"], type=str)
         settings_dict["base_directory"] = self.qsettings.value("base_directory", self.default_settings["base_directory"], type=str)
         settings_dict["simultaneous_downloads"] = self.qsettings.value("simultaneous_downloads", self.default_settings["simultaneous_downloads"], type=int)
-        settings_dict["auto_start_downloads"] = self.qsettings.value("auto_start_downloads", self.default_settings["auto_start_downloads"], type=bool)
         settings_dict["show_notifications"] = self.qsettings.value("show_notifications", self.default_settings["show_notifications"], type=bool)
         settings_dict["theme_color"] = self.qsettings.value("theme_color", self.default_settings["theme_color"], type=str)
         return settings_dict
@@ -38,7 +36,6 @@ class SettingsTab(QWidget):
         self.qsettings.setValue("base_folder_name", self.settings["base_folder_name"])
         self.qsettings.setValue("base_directory", self.settings["base_directory"])
         self.qsettings.setValue("simultaneous_downloads", self.settings["simultaneous_downloads"])
-        self.qsettings.setValue("auto_start_downloads", self.settings["auto_start_downloads"])
         self.qsettings.setValue("show_notifications", self.settings["show_notifications"])
         self.qsettings.setValue("theme_color", self.settings["theme_color"])
         self.qsettings.sync()
@@ -82,11 +79,6 @@ class SettingsTab(QWidget):
         self.download_spinbox.setStyleSheet("padding: 5px; border-radius: 5px;")
         self.download_spinbox.valueChanged.connect(self.update_simultaneous_downloads)
         download_layout.addWidget(self.download_spinbox, 0, 2)
-        self.auto_start_check = QCheckBox("Auto Start Downloads")
-        self.auto_start_check.setChecked(self.temp_settings["auto_start_downloads"])
-        self.auto_start_check.setStyleSheet("color: white;")
-        self.auto_start_check.stateChanged.connect(lambda state: self.update_temp_setting("auto_start_downloads", state == 2))
-        download_layout.addWidget(self.auto_start_check, 1, 0, 1, 3)
         download_group.setLayout(download_layout)
         layout.addWidget(download_group)
 
@@ -171,7 +163,7 @@ class SettingsTab(QWidget):
         if self.settings["show_notifications"]:
             QMessageBox.information(self, "Settings Updated", "Settings have been applied successfully.")
 
-        self.settings_applied.emit()  # Emit signal to notify tabs
+        self.settings_applied.emit()  
 
     def get_simultaneous_downloads(self):
         return self.settings["simultaneous_downloads"]
