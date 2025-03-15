@@ -99,6 +99,200 @@ class ImageModal(QDialog):
         self.progress_bar.hide()
         QMessageBox.critical(self, "Image Load Error", error_message)
 
+class PostDetectionThread(QThread):
+    finished = pyqtSignal(list)
+    log = pyqtSignal(str, str)
+    error = pyqtSignal(str)
+
+    def __init__(self, url):
+        super().__init__()
+        self.url = url
+
+    def run(self):
+        self.log.emit(f"[INFO] Checking creator with URL: {self.url}", "INFO")
+        parts = self.url.split('/')
+        if len(parts) < 5 or 'kemono.su' not in self.url or parts[-2] != 'user':
+            self.error.emit("Invalid URL format. Expected: https://kemono.su/[service]/user/[creator_id]")
+            return
+        service, creator_id = parts[-3], parts[-1]
+        base_api_url = f"{API_BASE}/{service}/user/{creator_id}"
+
+        all_posts = []
+        offset = 0
+        page_size = 50
+        max_attempts = 200
+
+        attempt = 1
+        while attempt <= max_attempts:
+            api_url = f"{base_api_url}?o={offset}"
+            self.log.emit(f"[DEBUG] Fetching page {attempt} (offset {offset}) from {api_url}", "INFO")
+            
+            try:
+                response = requests.get(api_url, headers=HEADERS, timeout=10)
+                if response.status_code != 200:
+                    self.log.emit(f"[ERROR] Failed to fetch creator posts at offset {offset} - Status code: {response.status_code}", "ERROR")
+                    break
+                
+                posts_data = response.json()
+                if not isinstance(posts_data, list):
+                    self.log.emit("[ERROR] Invalid posts data returned! Response: " + json.dumps(posts_data, indent=2), "ERROR")
+                    break
+
+                self.log.emit(f"[DEBUG] Fetched {len(posts_data)} posts at offset {offset}", "INFO")
+
+                if not posts_data:
+                    self.log.emit(f"[INFO] No more posts to fetch at offset {offset}. Stopping pagination.", "INFO")
+                    break
+
+                all_posts.extend(posts_data)
+                offset += page_size
+                attempt += 1
+                time.sleep(0.5)
+
+            except requests.RequestException as e:
+                self.log.emit(f"[ERROR] Failed to fetch posts at offset {offset}: {str(e)}", "ERROR")
+                break
+
+        detected_posts = []
+        for post in all_posts:
+            post_id = post.get('id')
+            title = post.get('title', f"Post {post_id}")
+            thumbnail_url = None
+            if 'file' in post and post['file'] and 'path' in post['file']:
+                if post['file']['path'].lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+                    thumbnail_url = urljoin("https://kemono.su", post['file']['path'])
+            if not thumbnail_url and 'attachments' in post:
+                for attachment in post['attachments']:
+                    if isinstance(attachment, dict) and 'path' in attachment and attachment['path'].lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+                        thumbnail_url = urljoin("https://kemono.su", attachment['path'])
+                        break
+            if not thumbnail_url and 'file' in post and post['file'] and 'path' in post['file']:
+                thumbnail_url = urljoin("https://kemono.su", post['file']['path'])
+            detected_posts.append((title, (post_id, thumbnail_url)))
+
+        self.log.emit(f"[INFO] Total posts fetched for creator {self.url}: {len(detected_posts)}", "INFO")
+        self.finished.emit(detected_posts)
+
+class FilePreparationThread(QThread):
+    progress = pyqtSignal(int)
+    finished = pyqtSignal(list, dict)
+    log = pyqtSignal(str, str)
+    error = pyqtSignal(str)
+
+    def __init__(self, post_ids, all_files_map, creator_ext_checks, creator_main_check, creator_attachments_check, creator_content_check, max_concurrent=20):
+        super().__init__()
+        self.post_ids = post_ids
+        self.all_files_map = all_files_map
+        self.creator_ext_checks = creator_ext_checks
+        self.creator_main_check = creator_main_check
+        self.creator_attachments_check = creator_attachments_check
+        self.creator_content_check = creator_content_check
+        self.max_concurrent = max_concurrent
+
+    def detect_files(self, post, allowed_extensions):
+        files_to_download = []
+        self.log.emit(f"[DEBUG] Detecting files for post with allowed extensions: {allowed_extensions}", "INFO")
+        if self.creator_main_check and 'file' in post and post['file'] and 'path' in post['file']:
+            file_path = post['file']['path']
+            file_name = post['file'].get('name', '')
+            file_ext = os.path.splitext(file_path)[1].lower() or os.path.splitext(file_name)[1].lower()
+            file_url = urljoin("https://kemono.su", file_path)
+            if 'f=' not in file_url and file_name:
+                file_url += f"?f={file_name}"
+            self.log.emit(f"[DEBUG] Checking main file: {file_name} ({file_ext})", "INFO")
+            if '.jpg' in allowed_extensions and file_ext in ['.jpg', '.jpeg']:
+                self.log.emit(f"[DEBUG] Added main file: {file_name}", "INFO")
+                files_to_download.append((file_name, file_url))
+            elif file_ext in allowed_extensions:
+                self.log.emit(f"[DEBUG] Added main file: {file_name}", "INFO")
+                files_to_download.append((file_name, file_url))
+
+        if self.creator_attachments_check and 'attachments' in post:
+            for attachment in post['attachments']:
+                if isinstance(attachment, dict) and 'path' in attachment:
+                    attachment_path = attachment['path']
+                    attachment_name = attachment.get('name', '')
+                    attachment_ext = os.path.splitext(attachment_path)[1].lower() or os.path.splitext(attachment_name)[1].lower()
+                    attachment_url = urljoin("https://kemono.su", attachment_path)
+                    if 'f=' not in attachment_url and attachment_name:
+                        attachment_url += f"?f={attachment_name}"
+                    self.log.emit(f"[DEBUG] Checking attachment: {attachment_name} ({attachment_ext})", "INFO")
+                    if '.jpg' in allowed_extensions and attachment_ext in ['.jpg', '.jpeg']:
+                        self.log.emit(f"[DEBUG] Added attachment: {attachment_name}", "INFO")
+                        files_to_download.append((attachment_name, attachment_url))
+                    elif attachment_ext in allowed_extensions:
+                        self.log.emit(f"[DEBUG] Added attachment: {attachment_name}", "INFO")
+                        files_to_download.append((attachment_name, attachment_url))
+
+        if self.creator_content_check and 'content' in post and post['content']:
+            soup = BeautifulSoup(post['content'], 'html.parser')
+            for img in soup.select('img[src]'):
+                img_url = urljoin("https://kemono.su", img['src'])
+                img_ext = os.path.splitext(img_url)[1].lower()
+                img_name = os.path.basename(img_url)
+                self.log.emit(f"[DEBUG] Checking content image: {img_name} ({img_ext})", "INFO")
+                if '.jpg' in allowed_extensions and img_ext in ['.jpg', '.jpeg']:
+                    self.log.emit(f"[DEBUG] Added content image: {img_name}", "INFO")
+                    files_to_download.append((img_name, img_url))
+                elif img_ext in allowed_extensions:
+                    self.log.emit(f"[DEBUG] Added content image: {img_name}", "INFO")
+                    files_to_download.append((img_name, img_url))
+
+        self.log.emit(f"[DEBUG] Total files detected: {len(files_to_download)}", "INFO")
+        return list(dict.fromkeys(files_to_download))
+
+    def fetch_and_detect_files(self, post_id, creator_url):
+        parts = creator_url.split('/')
+        service, creator_id = parts[-3], parts[-1]
+        api_url = f"{API_BASE}/{service}/user/{creator_id}/post/{post_id}"
+        try:
+            response = requests.get(api_url, headers=HEADERS)
+            if response.status_code != 200:
+                self.log.emit(f"[ERROR] Failed to fetch {api_url} - Status code: {response.status_code}", "ERROR")
+                return None
+            post_data = response.json()
+            post = post_data if isinstance(post_data, dict) and 'post' not in post_data else post_data.get('post', {})
+            self.log.emit(f"[DEBUG] Post data for {post_id}: {json.dumps(post, indent=2)}", "INFO")
+            allowed_extensions = [ext.lower() for ext, check in self.creator_ext_checks.items() if check]
+            detected_files = self.detect_files(post, allowed_extensions)
+            files_to_download = [(file_name, file_url) for file_name, file_url in detected_files]
+            return (post_id, files_to_download)
+        except Exception as e:
+            self.log.emit(f"[ERROR] Error fetching post {post_id}: {str(e)}", "ERROR")
+            return None
+
+    def run(self):
+        files_to_download = []
+        files_to_posts_map = {}
+        allowed_extensions = [ext.lower() for ext, check in self.creator_ext_checks.items() if check]
+        self.log.emit(f"[DEBUG] Allowed extensions for download: {allowed_extensions}", "INFO")
+
+        total_posts = len(self.post_ids)
+        completed_posts = 0
+
+        with ThreadPoolExecutor(max_workers=self.max_concurrent) as executor:
+            future_to_post = {executor.submit(self.fetch_and_detect_files, post_id, creator_url): post_id
+                             for creator_url, posts in self.all_files_map.items()
+                             for _, (post_id, _) in posts
+                             if post_id in self.post_ids}
+            
+            for future in as_completed(future_to_post):
+                if not future.running():
+                    result = future.result()
+                    if result:
+                        post_id, detected_files = result
+                        for file_name, file_url in detected_files:
+                            self.log.emit(f"[DEBUG] Detected file: {file_name} from {file_url}", "INFO")
+                            files_to_download.append(file_url)
+                            files_to_posts_map[file_url] = post_id
+                    completed_posts += 1
+                    progress = min(int((completed_posts / total_posts) * 100), 100)
+                    self.progress.emit(progress)
+
+        files_to_download = list(dict.fromkeys(files_to_download))
+        self.log.emit(f"[DEBUG] Total files to download: {len(files_to_download)}", "INFO")
+        self.finished.emit(files_to_download, files_to_posts_map)
+
 class CreatorDownloadThread(QThread):
     file_progress = pyqtSignal(int, int)  # file_index, progress
     file_completed = pyqtSignal(int, str)  # file_index, file_url
@@ -363,7 +557,7 @@ class CreatorDownloaderTab(QWidget):
         creator_progress_layout.addWidget(self.creator_overall_progress_label)
         self.creator_overall_progress = QProgressBar()
         self.creator_overall_progress.setStyleSheet("QProgressBar { border: 1px solid #4A5B7A; border-radius: 5px; background: #2A3B5A; } QProgressBar::chunk { background: #4A5B7A; }")
-        self.creator_overall_progress.setRange(0, 100)  # Ensure the range is 0 to 100
+        self.creator_overall_progress.setRange(0, 100)
         creator_progress_layout.addWidget(self.creator_overall_progress)
         left_layout.addLayout(creator_progress_layout)
 
@@ -433,9 +627,19 @@ class CreatorDownloaderTab(QWidget):
         bottom_layout.addWidget(self.creator_view_button)
 
         post_list_layout.addLayout(bottom_layout)
-
         post_list_group.setLayout(post_list_layout)
         right_layout.addWidget(post_list_group)
+
+        self.background_task_label = QLabel("Idle")
+        self.background_task_label.setStyleSheet("color: white;")
+        right_layout.addWidget(self.background_task_label)
+
+        self.background_task_progress = QProgressBar()
+        self.background_task_progress.setStyleSheet("QProgressBar { border: 1px solid #4A5B7A; border-radius: 5px; background: #2A3B5A; } QProgressBar::chunk { background: #4A5B7A; }")
+        self.background_task_progress.setRange(0, 100)
+        self.background_task_progress.setValue(0)
+        right_layout.addWidget(self.background_task_progress)
+
         right_layout.addStretch()
         layout.addWidget(right_widget, stretch=1)
 
@@ -448,6 +652,7 @@ class CreatorDownloaderTab(QWidget):
         separator_style = "QProgressBar { border: 1px solid #4A5B7A; border-radius: 5px; background: #2A3B5A; } QProgressBar::chunk { background: #4A5B7A; }"
         self.creator_file_progress.setStyleSheet(separator_style)
         self.creator_overall_progress.setStyleSheet(separator_style)
+        self.background_task_progress.setStyleSheet(separator_style)
 
     def refresh_ui(self):
         self.update_progress_bar_style()
@@ -460,58 +665,9 @@ class CreatorDownloaderTab(QWidget):
             self.completed_posts.clear()
             self.completed_files.clear()
             self.total_files_to_download = 0
-
-    def detect_files(self, post, allowed_extensions):
-        files_to_download = []
-        self.append_log_to_console(f"[DEBUG] Detecting files for post with allowed extensions: {allowed_extensions}", "INFO")
-        if self.creator_main_check.isChecked() and 'file' in post and post['file'] and 'path' in post['file']:
-            file_path = post['file']['path']
-            file_name = post['file'].get('name', '')
-            file_ext = os.path.splitext(file_path)[1].lower() or os.path.splitext(file_name)[1].lower()
-            file_url = urljoin("https://kemono.su", file_path)
-            if 'f=' not in file_url and file_name:
-                file_url += f"?f={file_name}"
-            self.append_log_to_console(f"[DEBUG] Checking main file: {file_name} ({file_ext})", "INFO")
-            if '.jpg' in allowed_extensions and file_ext in ['.jpg', '.jpeg']:
-                self.append_log_to_console(f"[DEBUG] Added main file: {file_name}", "INFO")
-                files_to_download.append((file_name, file_url))
-            elif file_ext in allowed_extensions:
-                self.append_log_to_console(f"[DEBUG] Added main file: {file_name}", "INFO")
-                files_to_download.append((file_name, file_url))
-
-        if self.creator_attachments_check.isChecked() and 'attachments' in post:
-            for attachment in post['attachments']:
-                if isinstance(attachment, dict) and 'path' in attachment:
-                    attachment_path = attachment['path']
-                    attachment_name = attachment.get('name', '')
-                    attachment_ext = os.path.splitext(attachment_path)[1].lower() or os.path.splitext(attachment_name)[1].lower()
-                    attachment_url = urljoin("https://kemono.su", attachment_path)
-                    if 'f=' not in attachment_url and attachment_name:
-                        attachment_url += f"?f={attachment_name}"
-                    self.append_log_to_console(f"[DEBUG] Checking attachment: {attachment_name} ({attachment_ext})", "INFO")
-                    if '.jpg' in allowed_extensions and attachment_ext in ['.jpg', '.jpeg']:
-                        self.append_log_to_console(f"[DEBUG] Added attachment: {attachment_name}", "INFO")
-                        files_to_download.append((attachment_name, attachment_url))
-                    elif attachment_ext in allowed_extensions:
-                        self.append_log_to_console(f"[DEBUG] Added attachment: {attachment_name}", "INFO")
-                        files_to_download.append((attachment_name, attachment_url))
-
-        if self.creator_content_check.isChecked() and 'content' in post and post['content']:
-            soup = BeautifulSoup(post['content'], 'html.parser')
-            for img in soup.select('img[src]'):
-                img_url = urljoin("https://kemono.su", img['src'])
-                img_ext = os.path.splitext(img_url)[1].lower()
-                img_name = os.path.basename(img_url)
-                self.append_log_to_console(f"[DEBUG] Checking content image: {img_name} ({img_ext})", "INFO")
-                if '.jpg' in allowed_extensions and img_ext in ['.jpg', '.jpeg']:
-                    self.append_log_to_console(f"[DEBUG] Added content image: {img_name}", "INFO")
-                    files_to_download.append((img_name, img_url))
-                elif img_ext in allowed_extensions:
-                    self.append_log_to_console(f"[DEBUG] Added content image: {img_name}", "INFO")
-                    files_to_download.append((img_name, img_url))
-
-        self.append_log_to_console(f"[DEBUG] Total files detected: {len(files_to_download)}", "INFO")
-        return list(dict.fromkeys(files_to_download))
+            self.background_task_progress.setRange(0, 100)
+            self.background_task_progress.setValue(0)
+            self.background_task_label.setText("Idle")
 
     def add_creator_to_queue(self):
         url = self.creator_url_input.text().strip()
@@ -618,104 +774,64 @@ class CreatorDownloaderTab(QWidget):
         self.append_log_to_console(f"[INFO] Viewing creator: {url}", "INFO")
         
         self.current_creator_url = url
-        self.checked_urls.clear()  # Clear previous checked states
+        self.checked_urls.clear()
         self.posts_to_download = []
-        
-        if url not in self.all_files_map:
-            self.check_creator(url)
         
         self.creator_post_list.clear()
         self.previous_selected_widget = None
         
-        self.all_detected_posts = self.all_files_map.get(url, [])
+        if url in self.all_files_map:
+            self.all_detected_posts = self.all_files_map.get(url, [])
+            self.post_url_map = {post_title: (post_id, thumbnail_url) for post_title, (post_id, thumbnail_url) in self.all_detected_posts}
+            self.append_log_to_console(f"[DEBUG] Total detected posts: {len(self.all_detected_posts)}", "INFO")
+            for post_title, (post_id, thumbnail_url) in self.all_detected_posts:
+                self.add_list_item(post_title, thumbnail_url)
+                self.checked_urls[post_id] = False
+            for i, (queue_url, _) in enumerate(self.creator_queue):
+                if queue_url == url:
+                    self.creator_queue[i] = (url, True)
+                    self.update_creator_queue_list()
+                    break
+            self.update_checked_posts()
+            self.filter_items()
+            self.append_log_to_console(f"[DEBUG] Displayed {self.creator_post_list.count()} posts for creator {url}", "INFO")
+            self.background_task_progress.setRange(0, 100)
+            self.background_task_progress.setValue(0)
+            self.background_task_label.setText("Idle")
+        else:
+            self.background_task_label.setText("Detecting posts from link...")
+            self.background_task_progress.setRange(0, 0)  # Set to indeterminate state for looping animation
+            self.post_detection_thread = PostDetectionThread(url)
+            self.post_detection_thread.finished.connect(self.on_post_detection_finished)
+            self.post_detection_thread.log.connect(self.append_log_to_console)
+            self.post_detection_thread.error.connect(self.on_post_detection_error)
+            self.post_detection_thread.start()
+
+    def on_post_detection_finished(self, detected_posts):
+        self.all_files_map[self.current_creator_url] = detected_posts
+        self.all_detected_posts = detected_posts
         self.post_url_map = {post_title: (post_id, thumbnail_url) for post_title, (post_id, thumbnail_url) in self.all_detected_posts}
         self.append_log_to_console(f"[DEBUG] Total detected posts: {len(self.all_detected_posts)}", "INFO")
         for post_title, (post_id, thumbnail_url) in self.all_detected_posts:
             self.add_list_item(post_title, thumbnail_url)
-            self.checked_urls[post_id] = False  # Default to unchecked for all posts
-        
+            self.checked_urls[post_id] = False
         for i, (queue_url, _) in enumerate(self.creator_queue):
-            if queue_url == url:
-                self.creator_queue[i] = (url, True)
+            if queue_url == self.current_creator_url:
+                self.creator_queue[i] = (self.current_creator_url, True)
                 self.update_creator_queue_list()
                 break
-        
         self.update_checked_posts()
         self.filter_items()
-        self.append_log_to_console(f"[DEBUG] Displayed {self.creator_post_list.count()} posts for creator {url}", "INFO")
+        self.append_log_to_console(f"[DEBUG] Displayed {self.creator_post_list.count()} posts for creator {self.current_creator_url}", "INFO")
+        self.background_task_progress.setRange(0, 100)
+        self.background_task_progress.setValue(0)
+        self.background_task_label.setText("Idle")
 
-    def check_creator(self, url):
-        self.append_log_to_console(f"[INFO] Checking creator with URL: {url}", "INFO")
-        parts = url.split('/')
-        if len(parts) < 5 or 'kemono.su' not in url or parts[-2] != 'user':
-            self.append_log_to_console("[ERROR] Invalid URL format. Expected: https://kemono.su/[service]/user/[creator_id]", "ERROR")
-            return False
-        service, creator_id = parts[-3], parts[-1]
-        base_api_url = f"{API_BASE}/{service}/user/{creator_id}"
-
-        all_posts = []
-        offset = 0
-        page_size = 50  # Kemono.su typically returns 50 posts per page
-        max_attempts = 200  # Safety limit to prevent infinite loops (up to 10,000 posts)
-
-        attempt = 1
-        while attempt <= max_attempts:
-            api_url = f"{base_api_url}?o={offset}"
-            self.append_log_to_console(f"[DEBUG] Fetching page {attempt} (offset {offset}) from {api_url}", "INFO")
-            
-            try:
-                response = requests.get(api_url, headers=HEADERS, timeout=10)
-                if response.status_code != 200:
-                    self.append_log_to_console(f"[ERROR] Failed to fetch creator posts at offset {offset} - Status code: {response.status_code}", "ERROR")
-                    break
-                
-                posts_data = response.json()
-                if not isinstance(posts_data, list):
-                    self.append_log_to_console("[ERROR] Invalid posts data returned! Response: " + json.dumps(posts_data, indent=2), "ERROR")
-                    break
-
-                self.append_log_to_console(f"[DEBUG] Fetched {len(posts_data)} posts at offset {offset}", "INFO")
-
-                # If no posts are returned, we've reached the end
-                if not posts_data:
-                    self.append_log_to_console(f"[INFO] No more posts to fetch at offset {offset}. Stopping pagination.", "INFO")
-                    break
-
-                # Add the fetched posts to the list
-                all_posts.extend(posts_data)
-
-                # Increment the offset for the next page
-                offset += page_size
-                attempt += 1
-
-                # Add a small delay to respect rate limits
-                time.sleep(0.5)
-
-            except requests.RequestException as e:
-                self.append_log_to_console(f"[ERROR] Failed to fetch posts at offset {offset}: {str(e)}", "ERROR")
-                break
-
-        # Process all fetched posts
-        detected_posts = []
-        for post in all_posts:
-            post_id = post.get('id')
-            title = post.get('title', f"Post {post_id}")
-            thumbnail_url = None
-            if self.creator_main_check.isChecked() and 'file' in post and post['file'] and 'path' in post['file']:
-                if post['file']['path'].lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
-                    thumbnail_url = urljoin("https://kemono.su", post['file']['path'])
-            if not thumbnail_url and self.creator_attachments_check.isChecked() and 'attachments' in post:
-                for attachment in post['attachments']:
-                    if isinstance(attachment, dict) and 'path' in attachment and attachment['path'].lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
-                        thumbnail_url = urljoin("https://kemono.su", attachment['path'])
-                        break
-            if not thumbnail_url and 'file' in post and post['file'] and 'path' in post['file']:
-                thumbnail_url = urljoin("https://kemono.su", post['file']['path'])
-            detected_posts.append((title, (post_id, thumbnail_url)))
-
-        self.all_files_map[url] = detected_posts
-        self.append_log_to_console(f"[INFO] Total posts fetched for creator {url}: {len(detected_posts)}", "INFO")
-        return True
+    def on_post_detection_error(self, error_message):
+        self.append_log_to_console(f"[ERROR] {error_message}", "ERROR")
+        self.background_task_progress.setRange(0, 100)
+        self.background_task_progress.setValue(0)
+        self.background_task_label.setText("Idle")
 
     def check_all_creators(self):
         self.all_files_map.clear()
@@ -725,92 +841,28 @@ class CreatorDownloaderTab(QWidget):
         total_posts = 0
         for url, _ in self.creator_queue:
             if url not in self.all_files_map:
-                parts = url.split('/')
-                service, creator_id = parts[-3], parts[-1]
-                base_api_url = f"{API_BASE}/{service}/user/{creator_id}"
-                
-                all_posts = []
-                offset = 0
-                page_size = 50
-                max_attempts = 200  # Safety limit
-
-                attempt = 1
-                while attempt <= max_attempts:
-                    api_url = f"{base_api_url}?o={offset}"
-                    self.append_log_to_console(f"[DEBUG] Fetching page {attempt} (offset {offset}) for {url}", "INFO")
-                    try:
-                        response = requests.get(api_url, headers=HEADERS, timeout=10)
-                        if response.status_code != 200:
-                            self.append_log_to_console(f"[WARNING] Failed to fetch creator {url} at offset {offset} - Status code: {response.status_code}", "WARNING")
-                            break
-                        
-                        posts_data = response.json()
-                        self.append_log_to_console(f"[DEBUG] Fetched {len(posts_data)} posts at offset {offset}", "INFO")
-
-                        if not posts_data:
-                            self.append_log_to_console(f"[INFO] No more posts to fetch for {url} at offset {offset}.", "INFO")
-                            break
-
-                        all_posts.extend(posts_data)
-                        offset += page_size
-                        attempt += 1
-
-                        time.sleep(0.5)  # Respect rate limits
-
-                    except requests.RequestException as e:
-                        self.append_log_to_console(f"[ERROR] Failed to check creator {url} at offset {offset}: {str(e)}", "ERROR")
-                        break
-
-                detected_posts = []
-                for post in all_posts:
-                    post_id = post.get('id')
-                    if post_id not in unique_post_ids:
-                        unique_post_ids.add(post_id)
-                        title = post.get('title', f"Post {post_id}")
-                        thumbnail_url = None
-                        if self.creator_main_check.isChecked() and 'file' in post and post['file'] and 'path' in post['file']:
-                            if post['file']['path'].lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
-                                thumbnail_url = urljoin("https://kemono.su", post['file']['path'])
-                        if not thumbnail_url and self.creator_attachments_check.isChecked() and 'attachments' in post:
-                            for attachment in post['attachments']:
-                                if isinstance(attachment, dict) and 'path' in attachment and attachment['path'].lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
-                                    thumbnail_url = urljoin("https://kemono.su", attachment['path'])
-                                    break
-                        if not thumbnail_url and 'file' in post and post['file'] and 'path' in post['file']:
-                            thumbnail_url = urljoin("https://kemono.su", post['file']['path'])
-                        detected_posts.append((title, (post_id, thumbnail_url)))
-                self.all_files_map[url] = detected_posts
-                total_posts += len(detected_posts)
+                self.background_task_label.setText("Detecting posts from link...")
+                self.background_task_progress.setRange(0, 0)
+                thread = PostDetectionThread(url)
+                thread.finished.connect(lambda posts, u=url: self.on_check_all_posts_detected(u, posts))
+                thread.log.connect(self.append_log_to_console)
+                thread.error.connect(self.on_post_detection_error)
+                thread.start()
+                self.active_threads.append(thread)
             else:
                 total_posts += len(self.all_files_map[url])
         self.creator_post_count_label.setText(f"Posts: {total_posts}")
         self.append_log_to_console(f"[INFO] Checked all creators. Total unique posts: {total_posts}", "INFO")
 
-    def get_files_for_posts(self, post_ids):
-        files_to_download = []
-        files_to_posts_map = {}
-        allowed_extensions = [ext.lower() for ext, check in self.creator_ext_checks.items() if check.isChecked()]
-        self.append_log_to_console(f"[DEBUG] Allowed extensions for download: {allowed_extensions}", "INFO")
-        for creator_url, posts in self.all_files_map.items():
-            for post_title, (post_id, _) in posts:
-                if post_id in post_ids:
-                    parts = creator_url.split('/')
-                    service, creator_id = parts[-3], parts[-1]
-                    api_url = f"{API_BASE}/{service}/user/{creator_id}/post/{post_id}"
-                    response = requests.get(api_url, headers=HEADERS)
-                    if response.status_code != 200:
-                        self.append_log_to_console(f"[ERROR] Failed to fetch {api_url} - Status code: {response.status_code}", "ERROR")
-                        continue
-                    post_data = response.json()
-                    post = post_data if isinstance(post_data, dict) and 'post' not in post_data else post_data.get('post', {})
-                    self.append_log_to_console(f"[DEBUG] Post data for {post_id}: {json.dumps(post, indent=2)}", "INFO")
-                    detected_files = self.detect_files(post, allowed_extensions)
-                    for file_name, file_url in detected_files:
-                        self.append_log_to_console(f"[DEBUG] Detected file: {file_name} from {file_url}", "INFO")
-                        files_to_download.append(file_url)
-                        files_to_posts_map[file_url] = post_id
-        self.append_log_to_console(f"[DEBUG] Total files to download: {len(files_to_download)}", "INFO")
-        return list(dict.fromkeys(files_to_download)), files_to_posts_map
+    def on_check_all_posts_detected(self, url, posts):
+        self.all_files_map[url] = posts
+        total_posts = sum(len(posts) for posts in self.all_files_map.values())
+        self.creator_post_count_label.setText(f"Posts: {total_posts}")
+        self.background_task_progress.setRange(0, 100)
+        self.background_task_progress.setValue(0)
+        self.background_task_label.setText("Idle")
+        if not any(thread.isRunning() for thread in self.active_threads):
+            self.append_log_to_console(f"[INFO] Finished checking all creators. Total posts: {total_posts}", "INFO")
 
     def start_creator_download(self):
         if not self.creator_queue:
@@ -823,7 +875,7 @@ class CreatorDownloaderTab(QWidget):
 
         self.downloading = True
         self.parent.tabs.setTabEnabled(0, False)
-        self.parent.status_label.setText("Checking creators...")
+        self.parent.status_label.setText("Preparing files...")
         self.creator_download_btn.setEnabled(False)
         self.creator_cancel_btn.setEnabled(True)
         self.creator_overall_progress.setValue(0)
@@ -837,69 +889,104 @@ class CreatorDownloaderTab(QWidget):
         self.creator_file_progress_label.setText("File Progress 0%")
         self.update_progress_bar_style()
 
+        self.background_task_label.setText("Preparing files to download...")
+        self.background_task_progress.setRange(0, 100)
+        self.background_task_progress.setValue(0)
+
         if self.download_all_links.isChecked():
-            self.append_log_to_console(f"[INFO] Starting download of all creators in queue", "INFO")
-            self.process_next_creator([url for url, _ in self.creator_queue])
+            urls = [url for url, _ in self.creator_queue]
+            self.append_log_to_console(f"[INFO] Preparing files for all creators in queue", "INFO")
         else:
             if not self.current_creator_url:
                 self.append_log_to_console("[WARNING] No creator currently viewed to download.", "WARNING")
                 self.creator_download_finished()
                 return
-            self.append_log_to_console(f"[INFO] Starting download of currently viewed creator: {self.current_creator_url}", "INFO")
-            self.process_next_creator([self.current_creator_url])
+            urls = [self.current_creator_url]
+            self.append_log_to_console(f"[INFO] Preparing files for currently viewed creator: {self.current_creator_url}", "INFO")
 
-    def process_next_creator(self, urls):
-        if not urls:
+        self.prepare_files_for_download(urls)
+
+    def prepare_files_for_download(self, urls):
+        if self.download_all_links.isChecked():
+            post_ids = []
+            for url in urls:
+                post_ids.extend([post_id for _, (post_id, _) in self.all_files_map.get(url, [])])
+        else:
+            current_creator_posts = {post_id for _, (post_id, _) in self.all_files_map.get(self.current_creator_url, [])}
+            post_ids = [post_id for post_id in self.posts_to_download if post_id in current_creator_posts]
+
+        if not post_ids:
+            self.append_log_to_console(f"[WARNING] No posts available for download. Skipping.", "WARNING")
+            self.background_task_progress.setRange(0, 100)
+            self.background_task_progress.setValue(0)
+            self.background_task_label.setText("Idle")
             self.creator_download_finished()
+            return
+
+        self.file_preparation_thread = FilePreparationThread(
+            post_ids,
+            self.all_files_map,
+            self.creator_ext_checks,
+            self.creator_main_check.isChecked(),
+            self.creator_attachments_check.isChecked(),
+            self.creator_content_check.isChecked(),
+            max_concurrent=10  # Set to 10 concurrent posts
+        )
+        self.file_preparation_thread.progress.connect(self.update_background_progress)
+        self.file_preparation_thread.finished.connect(lambda files, files_map: self.on_file_preparation_finished(urls, files, files_map))
+        self.file_preparation_thread.log.connect(self.append_log_to_console)
+        self.file_preparation_thread.error.connect(self.on_file_preparation_error)
+        self.file_preparation_thread.start()
+
+    def update_background_progress(self, value):
+        self.background_task_progress.setValue(value)
+
+    def on_file_preparation_finished(self, urls, files_to_download, files_to_posts_map):
+        self.total_files_to_download = len(files_to_download)
+        self.append_log_to_console(f"[DEBUG] Prepared {self.total_files_to_download} files for download", "INFO")
+        self.background_task_progress.setRange(0, 100)
+        self.background_task_progress.setValue(0)
+        self.background_task_label.setText("Idle")
+
+        if not files_to_download:
+            self.append_log_to_console(f"[WARNING] No files detected for selected posts. Skipping.", "WARNING")
+            self.process_next_creator(urls[1:] if len(urls) > 1 else [])
             return
 
         url = urls[0]
         remaining_urls = urls[1:]
-
         parts = url.split('/')
-        if len(parts) < 5 or 'kemono.su' not in url or parts[-2] != 'user':
-            self.append_log_to_console("[ERROR] Invalid URL format. Expected: https://kemono.su/[service]/user/[creator_id]", "ERROR")
-            self.process_next_creator(remaining_urls)
-            return
         service, creator_id = parts[-3], parts[-1]
 
-        if url not in self.all_files_map:
-            self.check_creator(url)
-        if url in self.all_files_map:
-            if self.download_all_links.isChecked():
-                self.posts_to_download = [post_id for _, (post_id, _) in self.all_files_map[url]]
-            else:
-                current_creator_posts = {post_id for _, (post_id, _) in self.all_files_map[url]}
-                self.posts_to_download = [post_id for post_id in self.posts_to_download if post_id in current_creator_posts]
-            
-            if not self.posts_to_download:
-                self.append_log_to_console(f"[WARNING] No posts available for download from {url}. Skipping.", "WARNING")
-                self.process_next_creator(remaining_urls)
-                return
-            files_to_download, files_to_posts_map = self.get_files_for_posts(self.posts_to_download)
-            if not files_to_download:
-                self.append_log_to_console(f"[WARNING] No files detected for selected posts from {url}. Skipping.", "WARNING")
-                self.process_next_creator(remaining_urls)
-                return
-            self.total_files_to_download = len(files_to_download)
-            self.append_log_to_console(f"[DEBUG] Downloading {self.total_files_to_download} files for creator {url}", "INFO")
-            self.creator_overall_progress_label.setText(
-                f"Overall Progress (0/{self.total_files_to_download} files, 0/{self.total_posts_to_download} posts)"
-            )
-            max_concurrent = self.parent.settings_tab.get_simultaneous_downloads()
-            self.thread = CreatorDownloadThread(service, creator_id, self.parent.download_folder, 
-                                               self.posts_to_download, files_to_download, files_to_posts_map, 
-                                               self.creator_console, self.other_files_dir, max_concurrent)
-            self.active_threads.append(self.thread)
-            self.thread.file_progress.connect(self.update_creator_file_progress)
-            self.thread.file_completed.connect(self.update_file_completion)
-            self.thread.post_completed.connect(self.update_post_completion)
-            self.thread.log.connect(self.append_log_to_console)
-            self.thread.finished.connect(lambda: self.cleanup_thread(self.thread, remaining_urls))
-            self.thread.start()
-        else:
-            self.append_log_to_console(f"[ERROR] No posts detected for creator {url}. Skipping.", "ERROR")
-            self.process_next_creator(remaining_urls)
+        self.creator_overall_progress_label.setText(
+            f"Overall Progress (0/{self.total_files_to_download} files, 0/{self.total_posts_to_download} posts)"
+        )
+        max_concurrent = self.parent.settings_tab.get_simultaneous_downloads()
+        self.thread = CreatorDownloadThread(service, creator_id, self.parent.download_folder, 
+                                           self.posts_to_download, files_to_download, files_to_posts_map, 
+                                           self.creator_console, self.other_files_dir, max_concurrent)
+        self.active_threads.append(self.thread)
+        self.thread.file_progress.connect(self.update_creator_file_progress)
+        self.thread.file_completed.connect(self.update_file_completion)
+        self.thread.post_completed.connect(self.update_post_completion)
+        self.thread.log.connect(self.append_log_to_console)
+        self.thread.finished.connect(lambda: self.cleanup_thread(self.thread, remaining_urls))
+        self.thread.start()
+
+    def on_file_preparation_error(self, error_message):
+        self.append_log_to_console(f"[ERROR] {error_message}", "ERROR")
+        self.background_task_progress.setRange(0, 100)
+        self.background_task_progress.setValue(0)
+        self.background_task_label.setText("Idle")
+        self.creator_download_finished()
+
+    def process_next_creator(self, remaining_urls):
+        if not remaining_urls:
+            self.creator_download_finished()
+            return
+        url = remaining_urls[0]
+        new_remaining_urls = remaining_urls[1:]
+        self.prepare_files_for_download([url] + new_remaining_urls)
 
     def cleanup_thread(self, thread, remaining_urls):
         if thread in self.active_threads:
@@ -924,6 +1011,9 @@ class CreatorDownloaderTab(QWidget):
             self.creator_cancel_btn.setEnabled(False)
             self.total_files_to_download = 0
             self.completed_files.clear()
+            self.background_task_progress.setRange(0, 100)
+            self.background_task_progress.setValue(0)
+            self.background_task_label.setText("Idle")
 
     def update_creator_file_progress(self, file_index, progress):
         if self.current_file_index == file_index or self.current_file_index == -1:
@@ -976,15 +1066,16 @@ class CreatorDownloaderTab(QWidget):
             self.creator_overall_progress_label.setText("Downloads Complete")
         self.total_files_to_download = 0
         self.completed_files.clear()
+        self.background_task_progress.setRange(0, 100)
+        self.background_task_progress.setValue(0)
+        self.background_task_label.setText("Idle")
 
     def toggle_check_all(self, state):
         is_checked = state == 2
         new_state = Qt.CheckState.Checked if is_checked else Qt.CheckState.Unchecked
-        # Update all detected posts, not just visible ones
         for post_title, (post_id, _) in self.all_detected_posts:
             self.checked_urls[post_id] = (new_state == Qt.CheckState.Checked)
         
-        # Sync UI with the updated state
         for i in range(self.creator_post_list.count()):
             item = self.creator_post_list.item(i)
             if not item.isHidden():
@@ -1051,7 +1142,6 @@ class CreatorDownloaderTab(QWidget):
 
     def filter_items(self):
         search_text = self.creator_search_input.text().lower()
-        # Capture the current checkbox states directly from the UI
         current_states = {}
         for i in range(self.creator_post_list.count()):
             item = self.creator_post_list.item(i)
@@ -1067,18 +1157,15 @@ class CreatorDownloaderTab(QWidget):
         self.creator_post_list.clear()
         self.previous_selected_widget = None
 
-        # Update checked_urls based on current states before repopulating
         for post_id in self.checked_urls:
             if post_id in current_states:
                 self.checked_urls[post_id] = current_states[post_id]
 
-        # Rebuild the list with the current search filter
         for post_title, (post_id, thumbnail_url) in self.all_detected_posts:
             if not search_text or search_text in post_title.lower():
                 self.add_list_item(post_title, thumbnail_url)
                 self.append_log_to_console(f"[DEBUG] Adding post to list: {post_title} (ID: {post_id})", "INFO")
 
-        # Restore checkbox states based on checked_urls
         for i in range(self.creator_post_list.count()):
             item = self.creator_post_list.item(i)
             if not item.isHidden():
@@ -1108,7 +1195,7 @@ class CreatorDownloaderTab(QWidget):
         check_box = QCheckBox()
         check_box.setStyleSheet("color: white;")
         post_id = self.post_url_map.get(text, (None, None))[0]
-        initial_state = self.checked_urls.get(post_id, False)  # Default to False as per check_creator_from_queue
+        initial_state = self.checked_urls.get(post_id, False)
         check_box.setChecked(initial_state)
         check_box.clicked.connect(lambda: self.toggle_checkbox_state(text))
         if self.download_all_links.isChecked():
