@@ -543,7 +543,7 @@ class PostDownloaderTab(QWidget):
 
         post_url_layout = QHBoxLayout()
         self.post_url_input = QLineEdit()
-        self.post_url_input.setPlaceholderText("Enter post URL (e.g., https://kemono.su/patreon/user/114138605/post/119966758)")
+        self.post_url_input.setPlaceholderText("Enter post URL (e.g., https://kemono.su/patreon/user/12345678/post/123456789)")
         self.post_url_input.setStyleSheet("padding: 5px; border-radius: 5px;")
         post_url_layout.addWidget(self.post_url_input)
         self.post_add_to_queue_btn = QPushButton(qta.icon('fa5s.plus'), "Add to Queue")

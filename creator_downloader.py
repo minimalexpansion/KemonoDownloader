@@ -486,7 +486,7 @@ class CreatorDownloaderTab(QWidget):
 
         creator_url_layout = QHBoxLayout()
         self.creator_url_input = QLineEdit()
-        self.creator_url_input.setPlaceholderText("Enter creator URL (e.g., https://kemono.su/patreon/user/11413860)")
+        self.creator_url_input.setPlaceholderText("Enter creator URL (e.g., https://kemono.su/patreon/user/12345678)")
         self.creator_url_input.setStyleSheet("padding: 5px; border-radius: 5px;")
         creator_url_layout.addWidget(self.creator_url_input)
         
