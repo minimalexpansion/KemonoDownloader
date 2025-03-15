@@ -300,7 +300,7 @@ class CreatorDownloadThread(QThread):
     log = pyqtSignal(str, str)
     finished = pyqtSignal()
 
-    def __init__(self, service, creator_id, download_folder, selected_posts, files_to_download, files_to_posts_map, console, other_files_dir, max_concurrent=5):
+    def __init__(self, service, creator_id, download_folder, selected_posts, files_to_download, files_to_posts_map, console, other_files_dir, max_concurrent=10):
         super().__init__()
         self.service = service
         self.creator_id = creator_id
@@ -930,7 +930,7 @@ class CreatorDownloaderTab(QWidget):
             self.creator_main_check.isChecked(),
             self.creator_attachments_check.isChecked(),
             self.creator_content_check.isChecked(),
-            max_concurrent=10  # Set to 10 concurrent posts
+            max_concurrent=5
         )
         self.file_preparation_thread.progress.connect(self.update_background_progress)
         self.file_preparation_thread.finished.connect(lambda files, files_map: self.on_file_preparation_finished(urls, files, files_map))
