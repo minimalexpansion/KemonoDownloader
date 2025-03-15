@@ -1043,7 +1043,7 @@ class PostDownloaderTab(QWidget):
             self.all_files_map,
             self.post_filter_checks,
             self.file_url_map,
-            max_concurrent=10
+            max_concurrent=5
         )
         self.file_preparation_thread.progress.connect(self.update_background_progress)
         self.file_preparation_thread.finished.connect(lambda files, files_map: self.on_file_preparation_finished(urls, files, files_map))
