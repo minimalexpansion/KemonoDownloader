@@ -1,10 +1,10 @@
-# Kemono Downloader
+<h1 align="center">Kemono.su Downloader</h1>
 
 <div align="center">
   <img src="assets/img/KemonoDownloader.png" alt="Kemono Downloader" width="600"/>
 </div>
 
-<div align="center">
+<div align="center" style="margin: 10px 0; padding: 5px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
   <a href="https://github.com/VoxDroid/KemonoDownloader/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/VoxDroid/KemonoDownloader?color=blue" alt="License">
   </a>
@@ -14,9 +14,35 @@
   <a href="https://github.com/VoxDroid/KemonoDownloader">
     <img src="https://img.shields.io/github/stars/VoxDroid/KemonoDownloader?color=yellow" alt="Stars">
   </a>
+  <a href="https://github.com/VoxDroid/KemonoDownloader/forks">
+    <img src="https://img.shields.io/github/forks/VoxDroid/KemonoDownloader?color=green" alt="Forks">
+  </a>
+  <a href="https://github.com/VoxDroid/KemonoDownloader/commits/main">
+    <img src="https://img.shields.io/github/last-commit/VoxDroid/KemonoDownloader?color=purple" alt="Last Commit">
+  </a>
+  <a href="https://github.com/VoxDroid/KemonoDownloader/issues">
+    <img src="https://img.shields.io/github/issues/VoxDroid/KemonoDownloader?color=red" alt="Issues">
+  </a>
+  <a href="https://www.python.org/downloads/">
+    <img src="https://img.shields.io/badge/python-3.9%2B-blueviolet" alt="Python Version">
+  </a>
+  <a href="https://github.com/VoxDroid/KemonoDownloader">
+    <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey" alt="Platforms">
+  </a>
+  <a href="https://github.com/VoxDroid/KemonoDownloader/releases">
+    <img src="https://img.shields.io/badge/version-v1.0.0-brightgreen" alt="Version">
+  </a>
 </div>
 
 <br>
+
+<p align="center">
+  <a href="https://ko-fi.com/O4O6LO7Q1" target="_blank">
+    <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="ko-fi" style="border: 0;">
+  </a>
+</p>
+
+<hr style="border: 1px dashed #4A6B9A; margin: 20px 0;">
 
 Welcome to **Kemono Downloader**, a versatile Python-based desktop application built with PyQt6, designed to download content from [Kemono.su](https://kemono.su). This tool enables users to archive individual posts or entire creator profiles from services like Patreon, Fanbox, and more, supporting a wide range of file types with customizable settings and advanced features.
 
