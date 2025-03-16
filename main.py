@@ -8,7 +8,7 @@ import qtawesome as qta
 from post_downloader import PostDownloaderTab
 from creator_downloader import CreatorDownloaderTab
 from kd_settings import SettingsTab
-from kd_help import HelpTab  # Import the new HelpTab
+from kd_help import HelpTab
 
 class IntroScreen(QWidget):
     def __init__(self, parent):
@@ -220,7 +220,7 @@ class KemonoDownloader(QMainWindow):
         anim.setEasingCurve(QEasingCurve.Type.InOutQuad)
         rect = button.geometry()
         if enter:
-            anim.setEndValue(rect.adjustaed(-2, -2, 2, 2))
+            anim.setEndValue(rect.adjusted(-2, -2, 2, 2))
         else:
             anim.setEndValue(rect.adjusted(2, 2, -2, -2))
         anim.start()

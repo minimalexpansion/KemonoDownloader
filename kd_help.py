@@ -1,4 +1,3 @@
-# kd_help.py
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QLabel
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
