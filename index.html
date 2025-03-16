@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kemono Downloader</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="assets/ico/KemonoDownloader.ico">
+    <!-- Bootstrap CSS for responsive layout -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Animate.css for animations -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <!-- Google Fonts: Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Highlight.js for code syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css">
+    <!-- Custom CSS for styling -->
+    <link rel="stylesheet" href="assets/css/index.css">
+</head>
+<body>
+    <!-- Header Section -->
+    <header>
+        <img src="assets/img/KemonoDownloader.png" alt="Kemono Downloader" class="app-image">
+        <h1>Kemono Downloader</h1>
+        <p>A cross-platform Python app built with PyQt6 to download content from Kemono.su</p>
+        <div class="d-flex flex-column align-items-center mt-2">
+            <a href="https://github.com/VoxDroid/KemonoDownloader" target="_blank" class="btn btn-custom">
+                <i class="fab fa-github"></i> GitHub Repository
+            </a>
+            <p align="center" style="margin-top: 10px;">
+                <a href="https://ko-fi.com/O4O6LO7Q1" target="_blank">
+                    <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="ko-fi" style="border: 0; background-color: #30363d; filter: brightness(1.2); padding: 5px; border-radius: 5px;">
+                </a>
+            </p>
+        </div>
+    </header>
+
+    <!-- Overview Section -->
+    <section class="bg-light-section">
+        <div class="container">
+            <h2 class="text-center">Overview</h2>
+            <p class="lead text-center">Kemono Downloader is a versatile Python-based desktop application built with PyQt6, designed to download content from <a href="https://kemono.su" target="_blank">Kemono.su</a>. This tool enables users to archive individual posts or entire creator profiles from services like Patreon, Fanbox, and more, supporting a wide range of file types with customizable settings and advanced features.</p>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="bg-dark-section text-white">
+        <div class="container">
+            <h2 class="text-center">Features</h2>
+            <div class="row features-row">
+                <div class="col-md-4">
+                    <div class="card h-100 text-center p-4">
+                        <i class="fas fa-download"></i>
+                        <div class="card-body">
+                            <h5 class="card-title">Post Downloading</h5>
+                            <p class="card-text">Easily download files from specific Kemono.su posts using their URLs.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 text-center p-4">
+                        <i class="fas fa-users"></i>
+                        <div class="card-body">
+                            <h5 class="card-title">Creator Archiving</h5>
+                            <p class="card-text">Bulk download all posts and files from a creator's profile with a single click.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 text-center p-4">
+                        <i class="fas fa-cogs"></i>
+                        <div class="card-body">
+                            <h5 class="card-title">Concurrent Downloads</h5>
+                            <p class="card-text">Adjust the number of simultaneous downloads (1-10) for optimal performance.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row features-row">
+                <div class="col-md-4">
+                    <div class="card h-100 text-center p-4">
+                        <i class="fas fa-shield-alt"></i>
+                        <div class="card-body">
+                            <h5 class="card-title">File Deduplication</h5>
+                            <p class="card-text">Prevent redundant downloads using URL hashes.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 text-center p-4">
+                        <i class="fas fa-image"></i>
+                        <div class="card-body">
+                            <h5 class="card-title">Image Previews</h5>
+                            <p class="card-text">Preview images before downloading to verify content.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 text-center p-4">
+                        <i class="fas fa-sliders-h"></i>
+                        <div class="card-body">
+                            <h5 class="card-title">Customizable Settings</h5>
+                            <p class="card-text">Tailor save directories, folder names, notifications, and themes to your preference.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation Section -->
+    <section class="bg-light-section">
+        <div class="container">
+            <h2 class="text-center">Installation</h2>
+            <div class="accordion" id="installationAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingOne">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                            <i class="fas fa-code me-2"></i> Running the Python Source (All Platforms)
+                        </button>
+                    </h2>
+                    <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#installationAccordion">
+                        <div class="accordion-body">
+                            <ol>
+                                <li>Ensure you have <strong>Python 3.9+</strong> installed on your system (Windows, macOS, Linux).</li>
+                                <li>Clone this repository:<br><pre><code class="language-bash">git clone https://github.com/VoxDroid/KemonoDownloader.git
+cd KemonoDownloader</code></pre></li>
+                                <li>Install the required dependencies (see <a href="#dependencies">Dependencies</a> below):<br><pre><code class="bash">pip install -r requirements.txt</code></pre></li>
+                                <li>Run the application:<br><pre><code class="bash">python main.py</code></pre></li>
+                                <p><em>Note</em>: An internet connection is required to fetch content from Kemono.su.</p>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="headingTwo">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                            <i class="fab fa-windows me-2"></i> Optional Windows Executable (For Non-Programmers)
+                        </button>
+                    </h2>
+                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#installationAccordion">
+                        <div class="accordion-body">
+                            <ul>
+                                <li>A pre-compiled Windows <code>.exe</code> is available for users who prefer not to set up Python.</li>
+                                <li>Download the latest version from the <a href="https://github.com/VoxDroid/KemonoDownloader/releases" target="_blank">Releases page</a>.</li>
+                                <li>Run the <code>.exe</code> file to launch the application—no additional setup needed.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Usage Section -->
+    <section class="bg-dark-section text-white">
+        <div class="container">
+            <h2 class="text-center">Usage</h2>
+            <p class="lead text-center">Upon launching, you’ll see an introductory screen with a "Launch" button. Click it to enter the main interface, featuring four tabs: <strong>Post Downloader</strong>, <strong>Creator Downloader</strong>, <strong>Settings</strong>, and <strong>Help</strong>. The in-app Help tab contains a comprehensive user manual.</p>
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <h4><i class="fas fa-play"></i> Getting Started</h4>
+                    <ul>
+                        <li>The application creates default directories (<code>Downloads</code>, <code>Cache</code>, <code>Other Files</code>) in the specified save location.</li>
+                        <li>Ensure an active internet connection to access Kemono.su content.</li>
+                        <li>Explore the Help tab for detailed instructions and troubleshooting tips.</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h4><i class="fas fa-download"></i> Post Downloader Tab</h4>
+                    <ol>
+                        <li>Enter a post URL (e.g., <code>https://kemono.su/patreon/user/123456789/post/123456789</code>) in the "Enter post URL" field.</li>
+                        <li>Click "Add to Queue" to add it to the list.</li>
+                        <li>Click the eye icon to view files, filter by type (e.g., JPG, ZIP), and select files to download.</li>
+                        <li>Click "Download" to start, and monitor progress with the progress bars and console.</li>
+                    </ol>
+                </div>
+                <div class="col-md-6">
+                    <h4><i class="fas fa-users"></i> Creator Downloader Tab</h4>
+                    <ol>
+                        <li>Enter a creator URL (e.g., <code>https://kemono.su/patreon/user/123456789</code>) in the "Enter creator URL" field.</li>
+                        <li>Click "Add to Queue" to add it to the list.</li>
+                        <li>Click the eye icon to fetch posts, configure options (Main File, Attachments, Content Images), and select posts.</li>
+                        <li>Click "Download" to begin, and track progress via the interface.</li>
+                    </ol>
+                </div>
+                <div class="col-md-6">
+                    <h4><i class="fas fa-cogs"></i> Settings Tab</h4>
+                    <ol>
+                        <li>Set the folder name and save directory for downloads.</li>
+                        <li>Adjust simultaneous downloads (1-10) using the slider or spinbox.</li>
+                        <li>Enable/disable notifications and toggle between dark/light themes.</li>
+                        <li>Click "Apply Changes" to save.</li>
+                    </ol>
+                </div>
+                <div class="col-md-12 text-center">
+                    <h4><i class="fas fa-question-circle"></i> Help Tab</h4>
+                    <p>Navigate to the Help tab to read detailed guides, examples, and support information.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Screenshots Section -->
+    <section class="bg-light-section">
+        <div class="container">
+            <h2 class="text-center">Screenshots</h2>
+            <div class="row justify-content-center">
+                <div class="col-md-4 mb-3">
+                    <img src="assets/previews/kd_pdown.png" alt="Post Downloader Tab" class="img-fluid screenshot-img" onclick="showImageOverlay('assets/previews/kd_pdown.png')">
+                    <p class="text-center mt-2"><strong>Post Downloader Tab</strong></p>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <img src="assets/previews/kd_cdown.png" alt="Creator Downloader Tab" class="img-fluid screenshot-img" onclick="showImageOverlay('assets/previews/kd_cdown.png')">
+                    <p class="text-center mt-2"><strong>Creator Downloader Tab</strong></p>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <img src="assets/previews/kd_settings.png" alt="Settings Tab" class="img-fluid screenshot-img" onclick="showImageOverlay('assets/previews/kd_settings.png')">
+                    <p class="text-center mt-2"><strong>Settings Tab</strong></p>
+                </div>
+            </div>
+            <!-- Floating Image Overlay -->
+            <div class="image-overlay" id="imageOverlay">
+                <button class="close-btn" id="closeOverlayBtn"><i class="fas fa-times"></i></button>
+                <img id="overlayImage" src="" alt="Screenshot">
+            </div>
+        </div>
+    </section>
+
+    <!-- Releases & Support Section -->
+    <section class="bg-dark-section text-white">
+        <div class="container">
+            <h2 class="text-center">Releases & Support</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <h4><i class="fas fa-download"></i> Releases</h4>
+                    <p>Optional Windows executables are available in the <a href="https://github.com/VoxDroid/KemonoDownloader/releases" target="_blank">Releases section</a> for non-programmers. Check release notes for details on new features, bug fixes, and version updates. The Python source remains the primary method, supporting all platforms with proper setup.</p>
+                </div>
+                <div class="col-md-6">
+                    <h4><i class="fas fa-heart"></i> Support</h4>
+                    <p>
+                        If you enjoy this project or want to support its development, consider these options:
+                        <ul>
+                            <li><a href="https://ko-fi.com/izeno" target="_blank">Ko-fi</a>: Buy me a coffee to fuel further development!</li>
+                            <li><a href="https://github.com/VoxDroid/KemonoDownloader/issues" target="_blank">GitHub Issues</a>: Report bugs or suggest features.</li>
+                            <li><a href="https://github.com/VoxDroid/KemonoDownloader/discussions" target="_blank">Discussions</a>: Engage with the community for support and ideas.</li>
+                        </ul>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contributing & License Section -->
+    <section class="bg-light-section">
+        <div class="container">
+            <h2 class="text-center">Contributing & License</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <h4><i class="fas fa-code-branch"></i> Contributing</h4>
+                    <p>Kemono Downloader is open-source, and contributions are encouraged! Here’s how to get involved:
+                        <ol>
+                            <li>Fork the repository: <a href="https://github.com/VoxDroid/KemonoDownloader" target="_blank">https://github.com/VoxDroid/KemonoDownloader</a>.</li>
+                            <li>Create a branch for your feature or fix.</li>
+                            <li>Submit a pull request with a clear description of your changes.</li>
+                            <li>Adhere to coding standards (to be detailed in a future <code>CONTRIBUTING.md</code>).</li>
+                            <li>Test your changes thoroughly before submission.</li>
+                        </ol>
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <h4><i class="fas fa-balance-scale"></i> License</h4>
+                    <p>This project is licensed under the <a href="https://github.com/VoxDroid/KemonoDownloader/blob/main/LICENSE" target="_blank">MIT License</a>. Use, modify, and distribute it freely per the license terms.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dependencies Section -->
+    <section class="bg-dark-section text-white">
+        <div class="container">
+            <h2 class="text-center">Dependencies</h2>
+            <p class="text-center">To build from source, install the following Python packages:</p>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">PyQt6 (for the GUI)</li>
+                <li class="list-group-item">requests (for HTTP requests)</li>
+                <li class="list-group-item">beautifulsoup4 (for HTML parsing)</li>
+                <li class="list-group-item">qtawesome (for icons)</li>
+            </ul>
+            <p class="text-center mt-3">Create a <code>requirements.txt</code> file with these dependencies and run <code>pip install -r requirements.txt</code>.</p>
+        </div>
+    </section>
+
+    <!-- Footer Section -->
+    <footer>
+        <p>Developed by <a href="https://github.com/VoxDroid" target="_blank">VoxDroid</a> | <a href="https://ko-fi.com/izeno" target="_blank">Support on Ko-fi</a></p>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <button id="back-to-top" title="Back to Top">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- Scripts -->
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Highlight.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <!-- Custom JS -->
+    <script src="assets/js/index.js"></script>
+</body>
+</html>
