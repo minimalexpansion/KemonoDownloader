@@ -127,8 +127,7 @@ Upon launching, you’ll see an introductory screen with a "Launch" button. Clic
 - **How to Use**:
   1. Set the folder name and save directory for downloads.
   2. Adjust simultaneous downloads (1-10) using the slider or spinbox.
-  3. Enable/disable notifications and toggle between dark/light themes.
-  4. Click "Apply Changes" to save.
+  3. Click "Apply Changes" to save.
 
 ### Help Tab
 - **Purpose**: Access the embedded user manual.
