@@ -1,1 +1,175 @@
-# KemonoDownloader
+# Kemono Downloader
+
+<div align="center">
+  <img src="assets/img/KemonoDownloader.png" alt="Kemono Downloader" width="600"/>
+</div>
+
+<div align="center">
+  <a href="https://github.com/VoxDroid/KemonoDownloader/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/VoxDroid/KemonoDownloader?color=blue" alt="License">
+  </a>
+  <a href="https://github.com/VoxDroid/KemonoDownloader/releases">
+    <img src="https://img.shields.io/github/downloads/VoxDroid/KemonoDownloader/total?color=orange" alt="Downloads">
+  </a>
+  <a href="https://github.com/VoxDroid/KemonoDownloader">
+    <img src="https://img.shields.io/github/stars/VoxDroid/KemonoDownloader?color=yellow" alt="Stars">
+  </a>
+</div>
+
+<br>
+
+Welcome to **Kemono Downloader**, a versatile Python-based desktop application built with PyQt6, designed to download content from [Kemono.su](https://kemono.su). This tool enables users to archive individual posts or entire creator profiles from services like Patreon, Fanbox, and more, supporting a wide range of file types with customizable settings and advanced features.
+
+## Table of Contents
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Getting Started](#getting-started)
+  - [Post Downloader Tab](#post-downloader-tab)
+  - [Creator Downloader Tab](#creator-downloader-tab)
+  - [Settings Tab](#settings-tab)
+  - [Help Tab](#help-tab)
+- [Screenshots](#screenshots)
+- [Releases](#releases)
+- [Support](#support)
+- [Contributing](#contributing)
+- [License](#license)
+- [Dependencies](#dependencies)
+
+## Features
+- **Post Downloading**: Easily download files from specific Kemono.su posts using their URLs.
+- **Creator Archiving**: Bulk download all posts and files from a creator's profile with a single click.
+- **File Type Support**: Handle images (JPG, PNG, GIF), videos (MP4), archives (ZIP, 7Z), PDFs, and more.
+- **Concurrent Downloads**: Adjust the number of simultaneous downloads (1-10) for optimal performance.
+- **File Deduplication**: Prevent redundant downloads using URL hashes.
+- **Image Previews**: Preview images before downloading to verify content.
+- **Customizable Settings**: Tailor save directories, folder names, notifications, and themes to your preference.
+- **Detailed Logging**: Track progress and troubleshoot issues with an in-app console.
+- **Cross-Platform UI**: Built with PyQt6 for a modern, intuitive interface compatible with multiple operating systems.
+
+## Installation
+Kemono Downloader is primarily a Python application that runs on any platform with the right dependencies. For non-programmers, an optional pre-built Windows executable is available. Choose the method that suits you:
+
+### Running the Python Source (All Platforms)
+1. Ensure you have **Python 3.9+** installed on your system (Windows, macOS, Linux).
+2. Clone this repository:
+   ```bash
+   git clone https://github.com/VoxDroid/KemonoDownloader.git
+   cd KemonoDownloader
+   ```
+3. Install the required dependencies (see [Dependencies](#dependencies) below):
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Run the application:
+   ```bash
+   python main.py
+   ```
+   - **Note**: An internet connection is required to fetch content from Kemono.su.
+
+### Optional Windows Executable (For Non-Programmers)
+- A pre-compiled Windows `.exe` is available for users who prefer not to set up Python.
+- Download the latest version from the [Releases page](https://github.com/VoxDroid/KemonoDownloader/releases).
+- Run the `.exe` file to launch the application—no additional setup needed.
+
+## Usage
+Upon launching, you’ll see an introductory screen with a "Launch" button. Click it to enter the main interface, featuring four tabs: **Post Downloader**, **Creator Downloader**, **Settings**, and **Help**. The in-app Help tab contains a comprehensive user manual.
+
+### Getting Started
+- The application creates default directories (`Downloads`, `Cache`, `Other Files`) in the specified save location.
+- Ensure an active internet connection to access Kemono.su content.
+- Explore the Help tab for detailed instructions and troubleshooting tips.
+
+### Post Downloader Tab
+- **Purpose**: Download files from individual Kemono.su posts.
+- **How to Use**:
+  1. Enter a post URL (e.g., `https://kemono.su/patreon/user/114138605/post/119966758`) in the "Enter post URL" field.
+  2. Click "Add to Queue" to add it to the list.
+  3. Click the eye icon to view files, filter by type (e.g., JPG, ZIP), and select files to download.
+  4. Click "Download" to start, and monitor progress with the progress bars and console.
+
+### Creator Downloader Tab
+- **Purpose**: Bulk download content from a creator's profile.
+- **How to Use**:
+  1. Enter a creator URL (e.g., `https://kemono.su/patreon/user/11413860`) in the "Enter creator URL" field.
+  2. Click "Add to Queue" to add it to the list.
+  3. Click the eye icon to fetch posts, configure options (Main File, Attachments, Content Images), and select posts.
+  4. Click "Download" to begin, and track progress via the interface.
+
+### Settings Tab
+- **Purpose**: Customize the application’s behavior.
+- **How to Use**:
+  1. Set the folder name and save directory for downloads.
+  2. Adjust simultaneous downloads (1-10) using the slider or spinbox.
+  3. Enable/disable notifications and toggle between dark/light themes.
+  4. Click "Apply Changes" to save.
+
+### Help Tab
+- **Purpose**: Access the embedded user manual.
+- **How to Use**: Navigate to the Help tab to read detailed guides, examples, and support information.
+
+## Screenshots
+
+Here are previews of the main tabs in Kemono Downloader:
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="assets/previews/kd_pdown.png" alt="Post Downloader Tab" width="400"/>
+      <br>
+      <strong>Post Downloader Tab</strong>
+    </td>
+    <td align="center">
+      <img src="assets/previews/kd_cdown.png" alt="Creator Downloader Tab" width="400"/>
+      <br>
+      <strong>Creator Downloader Tab</strong>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/previews/kd_settings.png" alt="Settings Tab" width="400"/>
+      <br>
+      <strong>Settings Tab</strong>
+    </td>
+    <td align="center">
+      <!-- Placeholder for potential fourth screenshot -->
+    </td>
+  </tr>
+</table>
+
+## Releases
+- Optional Windows executables are available in the [Releases section](https://github.com/VoxDroid/KemonoDownloader/releases) for non-programmers.
+- Check release notes for details on new features, bug fixes, and version updates.
+- The Python source remains the primary method, supporting all platforms with proper setup.
+
+## Support
+If you enjoy this project or want to support its development, consider these options:
+
+- **Ko-fi**: Buy me a coffee to fuel further development! Visit: [https://ko-fi.com/izeno](https://ko-fi.com/izeno).
+- **GitHub Issues**: Report bugs or suggest features on the [Issues page](https://github.com/VoxDroid/KemonoDownloader/issues).
+- **Discussions**: Engage with the community on the [Discussions tab](https://github.com/VoxDroid/KemonoDownloader/discussions) for support and ideas.
+
+## Contributing
+Kemono Downloader is open-source, and contributions are encouraged! Here’s how to get involved:
+1. Fork the repository: [https://github.com/VoxDroid/KemonoDownloader](https://github.com/VoxDroid/KemonoDownloader).
+2. Create a branch for your feature or fix.
+3. Submit a pull request with a clear description of your changes.
+4. Adhere to coding standards (to be detailed in a future `CONTRIBUTING.md`).
+5. Test your changes thoroughly before submission.
+
+## License
+This project is licensed under the [MIT License](LICENSE). Use, modify, and distribute it freely per the license terms.
+
+## Dependencies
+To build from source, install the following Python packages:
+- `PyQt6` (for the GUI)
+- `requests` (for HTTP requests)
+- `beautifulsoup4` (for HTML parsing)
+- `qtawesome` (for icons)
+
+Create a `requirements.txt` file with these dependencies and run `pip install -r requirements.txt`.
+
+---
+
+**Developed by VoxDroid**  
+[GitHub](https://github.com/VoxDroid) | [Ko-fi](https://ko-fi.com/izeno)
