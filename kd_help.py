@@ -11,9 +11,8 @@ class HelpTab(QWidget):
     def setup_ui(self):
         # Main layout for the Help tab
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(15, 15, 15, 15)  # Add padding for readability
+        main_layout.setContentsMargins(15, 15, 15, 15)
 
-        # Create a scroll area
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         scroll_area.setStyleSheet("""
@@ -39,11 +38,10 @@ class HelpTab(QWidget):
             }
         """)
 
-        # Create a widget to hold the content of the scroll area
         content_widget = QWidget()
         content_layout = QVBoxLayout(content_widget)
         content_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        content_layout.setSpacing(20)  # Increase spacing between sections for clarity
+        content_layout.setSpacing(20)
 
         # Title
         title_label = QLabel("<h1>Kemono Downloader User Manual</h1>")
@@ -432,16 +430,12 @@ class HelpTab(QWidget):
         support_text.setAlignment(Qt.AlignmentFlag.AlignJustify)
         content_layout.addWidget(support_text)
 
-        # Add stretch to push content to the top
         content_layout.addStretch()
 
-        # Set the content widget to the scroll area
         scroll_area.setWidget(content_widget)
         main_layout.addWidget(scroll_area)
 
-        # Set a minimum size for the tab to ensure consistent sizing
-        self.setMinimumSize(300, 400)  # Adjust as needed based on your UI
+        self.setMinimumSize(300, 400)  
 
     def refresh_ui(self):
-        # Placeholder for potential future UI refresh logic
         pass
