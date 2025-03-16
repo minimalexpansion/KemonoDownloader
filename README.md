@@ -4,7 +4,7 @@
   <img src="assets/img/KemonoDownloader.png" alt="Kemono Downloader" width="600"/>
 </div>
 
-<div align="center" style="margin: 10px 0; padding: 5px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+<div align="center">
   <a href="https://github.com/VoxDroid/KemonoDownloader/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/VoxDroid/KemonoDownloader?color=blue" alt="License">
   </a>
