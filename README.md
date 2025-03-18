@@ -32,7 +32,7 @@
   <a href="https://github.com/VoxDroid/KemonoDownloader/releases">
     <img src="https://img.shields.io/badge/version-v1.0.0-brightgreen" alt="Version">
   </a>
-  <a href="https://voxdroid.github.io/KemonoDownloader/">
+  <a href="https://voxdroid.github.io/KemonoDownloader/" target="_blank">
     <img src="https://img.shields.io/badge/Website-Visit%20Now-21262d?logo=github&style=flat&labelColor=21262d&color=58a6ff" alt="Website Badge">
 </a>
 </div>
@@ -112,7 +112,7 @@ Upon launching, you’ll see an introductory screen with a "Launch" button. Clic
 ### Post Downloader Tab
 - **Purpose**: Download files from individual Kemono.su posts.
 - **How to Use**:
-  1. Enter a post URL (e.g., `https://kemono.su/patreon/user/114138605/post/119966758`) in the "Enter post URL" field.
+  1. Enter a post URL (e.g., `https://kemono.su/patreon/user/123456789/post/123456789`) in the "Enter post URL" field.
   2. Click "Add to Queue" to add it to the list.
   3. Click the eye icon to view files, filter by type (e.g., JPG, ZIP), and select files to download.
   4. Click "Download" to start, and monitor progress with the progress bars and console.
@@ -120,7 +120,7 @@ Upon launching, you’ll see an introductory screen with a "Launch" button. Clic
 ### Creator Downloader Tab
 - **Purpose**: Bulk download content from a creator's profile.
 - **How to Use**:
-  1. Enter a creator URL (e.g., `https://kemono.su/patreon/user/11413860`) in the "Enter creator URL" field.
+  1. Enter a creator URL (e.g., `https://kemono.su/patreon/user/123456789`) in the "Enter creator URL" field.
   2. Click "Add to Queue" to add it to the list.
   3. Click the eye icon to fetch posts, configure options (Main File, Attachments, Content Images), and select posts.
   4. Click "Download" to begin, and track progress via the interface.
