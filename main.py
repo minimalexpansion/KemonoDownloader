@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
     QTabWidget
 )
 from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve
-from PyQt6.QtGui import QColor, QPalette, QFont, QCursor
+from PyQt6.QtGui import QColor, QPalette, QFont, QCursor, QIcon
 import qtawesome as qta
 from post_downloader import PostDownloaderTab
 from creator_downloader import CreatorDownloaderTab
@@ -114,6 +114,11 @@ class IntroScreen(QWidget):
         fade_in.setEasingCurve(QEasingCurve.Type.OutCubic)
         fade_in.start()
 
+def resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    else:
+        return os.path.join(os.path.dirname(__file__), relative_path)
 
 class KemonoDownloader(QMainWindow):
     def __init__(self):
@@ -131,6 +136,8 @@ class KemonoDownloader(QMainWindow):
         self.cache_folder = os.path.join(self.base_folder, "Cache")
         self.other_files_folder = os.path.join(self.base_folder, "Other Files")
         self.ensure_folders_exist()
+
+        self.setWindowIcon(QIcon(resource_path("KemonoDownloader.ico")))
 
         # Set up UI
         self.intro_screen = IntroScreen(self)
