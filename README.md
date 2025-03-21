@@ -32,6 +32,9 @@
   <a href="https://github.com/VoxDroid/KemonoDownloader/releases">
     <img src="https://img.shields.io/badge/version-v2.1.0-brightgreen" alt="Version">
   </a>
+  <a>
+    <img src="https://img.shields.io/github/v/release/VoxDroid/KemonoDownloader?label=Latest%20Release" alt="Latest Release">
+  </a>
   <a href="https://voxdroid.github.io/KemonoDownloader/" target="_blank">
     <img src="https://img.shields.io/badge/Website-Visit%20Now-21262d?logo=github&style=flat&labelColor=21262d&color=58a6ff" alt="Website Badge">
 </a>
