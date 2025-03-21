@@ -30,7 +30,7 @@
     <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey" alt="Platforms">
   </a>
   <a href="https://github.com/VoxDroid/KemonoDownloader/releases">
-    <img src="https://img.shields.io/badge/version-v1.0.0-brightgreen" alt="Version">
+    <img src="https://img.shields.io/badge/version-v2.0.0-brightgreen" alt="Version">
   </a>
   <a href="https://voxdroid.github.io/KemonoDownloader/" target="_blank">
     <img src="https://img.shields.io/badge/Website-Visit%20Now-21262d?logo=github&style=flat&labelColor=21262d&color=58a6ff" alt="Website Badge">
