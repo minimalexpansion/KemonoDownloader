@@ -83,6 +83,7 @@ class ImageModal(QDialog):
         self.preview_thread.preview_ready.connect(self.display_image)
         self.preview_thread.progress.connect(self.update_progress)
         self.preview_thread.error.connect(self.display_error)
+        self.preview_thread.finished.connect(self.preview_thread.deleteLater)
         self.preview_thread.start()
 
     def update_progress(self, value):
@@ -107,8 +108,14 @@ class PostDetectionThread(QThread):
     def __init__(self, url):
         super().__init__()
         self.url = url
+        self.is_running = True
+
+    def stop(self):
+        self.is_running = False
 
     def run(self):
+        if not self.is_running:
+            return
         self.log.emit(f"[INFO] Checking creator with URL: {self.url}", "INFO")
         parts = self.url.split('/')
         if len(parts) < 5 or 'kemono.su' not in self.url or parts[-2] != 'user':
@@ -123,7 +130,7 @@ class PostDetectionThread(QThread):
         max_attempts = 200
 
         attempt = 1
-        while attempt <= max_attempts:
+        while attempt <= max_attempts and self.is_running:
             api_url = f"{base_api_url}?o={offset}"
             self.log.emit(f"[DEBUG] Fetching page {attempt} (offset {offset}) from {api_url}", "INFO")
             
@@ -153,25 +160,70 @@ class PostDetectionThread(QThread):
                 self.log.emit(f"[ERROR] Failed to fetch posts at offset {offset}: {str(e)}", "ERROR")
                 break
 
-        detected_posts = []
-        for post in all_posts:
-            post_id = post.get('id')
-            title = post.get('title', f"Post {post_id}")
-            thumbnail_url = None
-            if 'file' in post and post['file'] and 'path' in post['file']:
-                if post['file']['path'].lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+        if self.is_running:
+            detected_posts = []
+            for post in all_posts:
+                post_id = post.get('id')
+                title = post.get('title', f"Post {post_id}")
+                thumbnail_url = None
+                if 'file' in post and post['file'] and 'path' in post['file']:
+                    if post['file']['path'].lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+                        thumbnail_url = urljoin("https://kemono.su", post['file']['path'])
+                if not thumbnail_url and 'attachments' in post:
+                    for attachment in post['attachments']:
+                        if isinstance(attachment, dict) and 'path' in attachment and attachment['path'].lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+                            thumbnail_url = urljoin("https://kemono.su", attachment['path'])
+                            break
+                if not thumbnail_url and 'file' in post and post['file'] and 'path' in post['file']:
                     thumbnail_url = urljoin("https://kemono.su", post['file']['path'])
-            if not thumbnail_url and 'attachments' in post:
-                for attachment in post['attachments']:
-                    if isinstance(attachment, dict) and 'path' in attachment and attachment['path'].lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
-                        thumbnail_url = urljoin("https://kemono.su", attachment['path'])
-                        break
-            if not thumbnail_url and 'file' in post and post['file'] and 'path' in post['file']:
-                thumbnail_url = urljoin("https://kemono.su", post['file']['path'])
-            detected_posts.append((title, (post_id, thumbnail_url)))
+                detected_posts.append((title, (post_id, thumbnail_url)))
 
-        self.log.emit(f"[INFO] Total posts fetched for creator {self.url}: {len(detected_posts)}", "INFO")
-        self.finished.emit(detected_posts)
+            self.log.emit(f"[INFO] Total posts fetched for creator {self.url}: {len(detected_posts)}", "INFO")
+            self.finished.emit(detected_posts)
+
+class PostPopulationThread(QThread):
+    finished = pyqtSignal(dict, list)
+    log = pyqtSignal(str, str)
+
+    def __init__(self, detected_posts):
+        super().__init__()
+        self.detected_posts = detected_posts
+        self.is_running = True
+
+    def stop(self):
+        self.is_running = False
+
+    def run(self):
+        if not self.is_running:
+            return
+        post_url_map = {post_title: (post_id, thumbnail_url) for post_title, (post_id, thumbnail_url) in self.detected_posts}
+        self.log.emit(f"[DEBUG] Prepared {len(self.detected_posts)} posts for population", "INFO")
+        self.finished.emit(post_url_map, self.detected_posts)
+
+class FilterThread(QThread):
+    finished = pyqtSignal(list)
+    log = pyqtSignal(str, str)
+
+    def __init__(self, all_detected_posts, checked_urls, search_text):
+        super().__init__()
+        self.all_detected_posts = all_detected_posts
+        self.checked_urls = checked_urls.copy()
+        self.search_text = search_text.lower()
+        self.is_running = True
+
+    def stop(self):
+        self.is_running = False
+
+    def run(self):
+        if not self.is_running:
+            return
+        filtered_items = []
+        for post_title, (post_id, thumbnail_url) in self.all_detected_posts:
+            if not self.search_text or self.search_text in post_title.lower():
+                is_checked = self.checked_urls.get(post_id, False)
+                filtered_items.append((post_title, post_id, thumbnail_url, is_checked))
+                self.log.emit(f"[DEBUG] Filtered post: {post_title} (ID: {post_id})", "INFO")
+        self.finished.emit(filtered_items)
 
 class FilePreparationThread(QThread):
     progress = pyqtSignal(int)
@@ -188,14 +240,25 @@ class FilePreparationThread(QThread):
         self.creator_attachments_check = creator_attachments_check
         self.creator_content_check = creator_content_check
         self.max_concurrent = max_concurrent
+        self.is_running = True
+
+    def stop(self):
+        self.is_running = False
 
     def detect_files(self, post, allowed_extensions):
         files_to_download = []
         self.log.emit(f"[DEBUG] Detecting files for post with allowed extensions: {allowed_extensions}", "INFO")
+        
+        def get_effective_extension(file_path, file_name):
+            name_ext = os.path.splitext(file_name)[1].lower()
+            path_ext = os.path.splitext(file_path)[1].lower()
+            return name_ext if name_ext else path_ext
+
+        # Main file detection
         if self.creator_main_check and 'file' in post and post['file'] and 'path' in post['file']:
             file_path = post['file']['path']
             file_name = post['file'].get('name', '')
-            file_ext = os.path.splitext(file_path)[1].lower() or os.path.splitext(file_name)[1].lower()
+            file_ext = get_effective_extension(file_path, file_name)
             file_url = urljoin("https://kemono.su", file_path)
             if 'f=' not in file_url and file_name:
                 file_url += f"?f={file_name}"
@@ -207,12 +270,13 @@ class FilePreparationThread(QThread):
                 self.log.emit(f"[DEBUG] Added main file: {file_name}", "INFO")
                 files_to_download.append((file_name, file_url))
 
+        # Attachments detection
         if self.creator_attachments_check and 'attachments' in post:
             for attachment in post['attachments']:
                 if isinstance(attachment, dict) and 'path' in attachment:
                     attachment_path = attachment['path']
                     attachment_name = attachment.get('name', '')
-                    attachment_ext = os.path.splitext(attachment_path)[1].lower() or os.path.splitext(attachment_name)[1].lower()
+                    attachment_ext = get_effective_extension(attachment_path, attachment_name)
                     attachment_url = urljoin("https://kemono.su", attachment_path)
                     if 'f=' not in attachment_url and attachment_name:
                         attachment_url += f"?f={attachment_name}"
@@ -224,6 +288,7 @@ class FilePreparationThread(QThread):
                         self.log.emit(f"[DEBUG] Added attachment: {attachment_name}", "INFO")
                         files_to_download.append((attachment_name, attachment_url))
 
+        # Content images detection
         if self.creator_content_check and 'content' in post and post['content']:
             soup = BeautifulSoup(post['content'], 'html.parser')
             for img in soup.select('img[src]'):
@@ -253,7 +318,7 @@ class FilePreparationThread(QThread):
             post_data = response.json()
             post = post_data if isinstance(post_data, dict) and 'post' not in post_data else post_data.get('post', {})
             self.log.emit(f"[DEBUG] Post data for {post_id}: {json.dumps(post, indent=2)}", "INFO")
-            allowed_extensions = [ext.lower() for ext, check in self.creator_ext_checks.items() if check]
+            allowed_extensions = [ext.lower() for ext, checkbox in self.creator_ext_checks.items() if checkbox.isChecked()]
             detected_files = self.detect_files(post, allowed_extensions)
             files_to_download = [(file_name, file_url) for file_name, file_url in detected_files]
             return (post_id, files_to_download)
@@ -262,9 +327,11 @@ class FilePreparationThread(QThread):
             return None
 
     def run(self):
+        if not self.is_running:
+            return
         files_to_download = []
         files_to_posts_map = {}
-        allowed_extensions = [ext.lower() for ext, check in self.creator_ext_checks.items() if check]
+        allowed_extensions = [ext.lower() for ext, checkbox in self.creator_ext_checks.items() if checkbox.isChecked()]
         self.log.emit(f"[DEBUG] Allowed extensions for download: {allowed_extensions}", "INFO")
 
         total_posts = len(self.post_ids)
@@ -277,26 +344,28 @@ class FilePreparationThread(QThread):
                              if post_id in self.post_ids}
             
             for future in as_completed(future_to_post):
-                if not future.running():
-                    result = future.result()
-                    if result:
-                        post_id, detected_files = result
-                        for file_name, file_url in detected_files:
-                            self.log.emit(f"[DEBUG] Detected file: {file_name} from {file_url}", "INFO")
-                            files_to_download.append(file_url)
-                            files_to_posts_map[file_url] = post_id
-                    completed_posts += 1
-                    progress = min(int((completed_posts / total_posts) * 100), 100)
-                    self.progress.emit(progress)
+                if not self.is_running:
+                    break
+                result = future.result()
+                if result:
+                    post_id, detected_files = result
+                    for file_name, file_url in detected_files:
+                        self.log.emit(f"[DEBUG] Detected file: {file_name} from {file_url}", "INFO")
+                        files_to_download.append(file_url)
+                        files_to_posts_map[file_url] = post_id
+                completed_posts += 1
+                progress = min(int((completed_posts / total_posts) * 100), 100)
+                self.progress.emit(progress)
 
-        files_to_download = list(dict.fromkeys(files_to_download))
-        self.log.emit(f"[DEBUG] Total files to download: {len(files_to_download)}", "INFO")
-        self.finished.emit(files_to_download, files_to_posts_map)
+        if self.is_running:
+            files_to_download = list(dict.fromkeys(files_to_download))
+            self.log.emit(f"[DEBUG] Total files to download: {len(files_to_download)}", "INFO")
+            self.finished.emit(files_to_download, files_to_posts_map)
 
 class CreatorDownloadThread(QThread):
-    file_progress = pyqtSignal(int, int)  # file_index, progress
-    file_completed = pyqtSignal(int, str)  # file_index, file_url
-    post_completed = pyqtSignal(str)  # Signal when all files for a post are downloaded
+    file_progress = pyqtSignal(int, int) 
+    file_completed = pyqtSignal(int, str)  
+    post_completed = pyqtSignal(str)
     log = pyqtSignal(str, str)
     finished = pyqtSignal()
 
@@ -307,7 +376,7 @@ class CreatorDownloadThread(QThread):
         self.download_folder = download_folder
         self.selected_posts = selected_posts
         self.files_to_download = files_to_download
-        self.files_to_posts_map = files_to_posts_map  # Mapping of file URL to post ID
+        self.files_to_posts_map = files_to_posts_map
         self.console = console
         self.is_running = True
         self.other_files_dir = other_files_dir
@@ -417,6 +486,8 @@ class CreatorDownloadThread(QThread):
                 self.post_completed.emit(post_id)
 
     def run(self):
+        if not self.is_running:
+            return
         self.log.emit(f"[INFO] CreatorDownloadThread started for service: {self.service}, creator_id: {self.creator_id}", "INFO")
         total_posts = len(self.selected_posts)
         self.log.emit(f"[INFO] Total posts: {total_posts}", "INFO")
@@ -449,7 +520,64 @@ class CreatorDownloadThread(QThread):
         else:
             self.log.emit("[WARNING] No files selected for download.", "WARNING")
 
-        self.finished.emit()
+        if self.is_running:
+            self.finished.emit()
+
+class ValidationThread(QThread):
+    result = pyqtSignal(bool)
+    log = pyqtSignal(str, str)
+
+    def __init__(self, url):
+        super().__init__()
+        self.url = url
+        self.is_running = True
+
+    def stop(self):
+        self.is_running = False
+
+    def run(self):
+        if not self.is_running:
+            return
+        parts = self.url.split('/')
+        if len(parts) < 5 or 'kemono.su' not in self.url or parts[-2] != 'user':
+            self.log.emit(f"[ERROR] Invalid URL format: {self.url}", "ERROR")
+            self.result.emit(False)
+            return
+        service, creator_id = parts[-3], parts[-1]
+        api_url = f"{API_BASE}/{service}/user/{creator_id}"
+        try:
+            response = requests.get(api_url, headers=HEADERS, timeout=5)
+            valid = response.status_code == 200
+            self.log.emit(f"[INFO] Validated URL {self.url}: {'Valid' if valid else 'Invalid'}", "INFO")
+            self.result.emit(valid)
+        except requests.RequestException as e:
+            self.log.emit(f"[ERROR] Failed to validate {self.url}: {str(e)}", "ERROR")
+            self.result.emit(False)
+
+class CheckboxToggleThread(QThread):
+    finished = pyqtSignal(dict, list)
+    log = pyqtSignal(str, str)
+
+    def __init__(self, all_detected_posts, checked_urls, check_all_state):
+        super().__init__()
+        self.all_detected_posts = all_detected_posts
+        self.checked_urls = checked_urls.copy()
+        self.check_all_state = check_all_state
+        self.is_running = True
+
+    def stop(self):
+        self.is_running = False
+
+    def run(self):
+        if not self.is_running:
+            return
+        is_checked = self.check_all_state == 2
+        new_state = Qt.CheckState.Checked if is_checked else Qt.CheckState.Unchecked
+        for post_title, (post_id, _) in self.all_detected_posts:
+            self.checked_urls[post_id] = (new_state == Qt.CheckState.Checked)
+        posts_to_download = [post_id for post_id, checked in self.checked_urls.items() if checked]
+        self.log.emit(f"[DEBUG] Checkbox toggle completed: Check ALL = {is_checked}, Updated posts: {len(posts_to_download)}", "INFO")
+        self.finished.emit(self.checked_urls, posts_to_download)
 
 class CreatorDownloaderTab(QWidget):
     def __init__(self, parent):
@@ -465,14 +593,20 @@ class CreatorDownloaderTab(QWidget):
         self.cache_dir = self.parent.cache_folder
         self.other_files_dir = self.parent.other_files_folder
         self.current_creator_url = None
-        self.all_files_map = {}  # Map creator URLs to their detected files
-        self.checked_urls = {}  # Track checked state of files
+        self.all_files_map = {}
+        self.checked_urls = {}
         self.current_file_index = -1
         self.active_threads = []
-        self.completed_posts = set()  # Track completed posts
-        self.total_posts_to_download = 0  # Track total posts to download
-        self.total_files_to_download = 0  # Track total files to download
-        self.completed_files = set()  # Track completed file URLs
+        self.completed_posts = set()
+        self.total_posts_to_download = 0
+        self.total_files_to_download = 0
+        self.completed_files = set()
+        self.validation_thread = None
+        self.post_detection_thread = None
+        self.post_population_thread = None
+        self.filter_thread = None
+        self.file_preparation_thread = None
+        self.checkbox_toggle_thread = None
         os.makedirs(self.cache_dir, exist_ok=True)
         os.makedirs(self.other_files_dir, exist_ok=True)
         self.setup_ui()
@@ -683,7 +817,30 @@ class CreatorDownloaderTab(QWidget):
         if any(item[0] == url for item in self.creator_queue):
             self.append_log_to_console("[WARNING] URL already in queue.", "WARNING")
             return
-        if self.check_creator_url_validity(url):
+        if hasattr(self, 'validation_thread') and self.validation_thread is not None and self.validation_thread.isRunning():
+            self.append_log_to_console("[WARNING] Validation already in progress. Please wait.", "WARNING")
+            return
+        self.background_task_label.setText("Validating URL...")
+        self.background_task_progress.setRange(0, 0)
+        self.validation_thread = ValidationThread(url)
+        self.validation_thread.result.connect(lambda valid: self.on_validation_finished(url, valid))
+        self.validation_thread.log.connect(self.append_log_to_console)
+        self.validation_thread.finished.connect(self.cleanup_validation_thread)
+        self.active_threads.append(self.validation_thread)
+        self.validation_thread.start()
+    
+    def cleanup_validation_thread(self):
+        """Clean up the validation thread after it finishes."""
+        if self.validation_thread in self.active_threads:
+            self.active_threads.remove(self.validation_thread)
+        self.validation_thread.deleteLater()
+        self.validation_thread = None
+
+    def on_validation_finished(self, url, valid):
+        self.background_task_progress.setRange(0, 100)
+        self.background_task_progress.setValue(0)
+        self.background_task_label.setText("Idle")
+        if valid:
             self.creator_queue.append((url, False))
             self.update_creator_queue_list()
             self.creator_url_input.clear()
@@ -692,18 +849,6 @@ class CreatorDownloaderTab(QWidget):
                 self.check_all_creators()
         else:
             self.append_log_to_console(f"[ERROR] Invalid creator URL or failed to fetch: {url}", "ERROR")
-
-    def check_creator_url_validity(self, url):
-        parts = url.split('/')
-        if len(parts) < 5 or 'kemono.su' not in url or parts[-2] != 'user':
-            return False
-        service, creator_id = parts[-3], parts[-1]
-        api_url = f"{API_BASE}/{service}/user/{creator_id}"
-        try:
-            response = requests.get(api_url, headers=HEADERS, timeout=5)
-            return response.status_code == 200
-        except requests.RequestException:
-            return False
 
     def create_view_handler(self, url, checked):
         def handler():
@@ -790,45 +935,53 @@ class CreatorDownloaderTab(QWidget):
             self.all_detected_posts = self.all_files_map.get(url, [])
             self.post_url_map = {post_title: (post_id, thumbnail_url) for post_title, (post_id, thumbnail_url) in self.all_detected_posts}
             self.append_log_to_console(f"[DEBUG] Total detected posts: {len(self.all_detected_posts)}", "INFO")
-            for post_title, (post_id, thumbnail_url) in self.all_detected_posts:
-                self.add_list_item(post_title, thumbnail_url)
-                self.checked_urls[post_id] = False
+            self.start_population_thread(self.all_detected_posts)
             for i, (queue_url, _) in enumerate(self.creator_queue):
                 if queue_url == url:
                     self.creator_queue[i] = (url, True)
                     self.update_creator_queue_list()
                     break
-            self.update_checked_posts()
-            self.filter_items()
-            self.append_log_to_console(f"[DEBUG] Displayed {self.creator_post_list.count()} posts for creator {url}", "INFO")
-            self.background_task_progress.setRange(0, 100)
-            self.background_task_progress.setValue(0)
-            self.background_task_label.setText("Idle")
         else:
+            if self.post_detection_thread and self.post_detection_thread.isRunning():
+                self.append_log_to_console("[WARNING] Post detection already in progress. Please wait.", "WARNING")
+                return
             self.background_task_label.setText("Detecting posts from link...")
-            self.background_task_progress.setRange(0, 0)  # Set to indeterminate state for looping animation
+            self.background_task_progress.setRange(0, 0)
             self.post_detection_thread = PostDetectionThread(url)
             self.post_detection_thread.finished.connect(self.on_post_detection_finished)
             self.post_detection_thread.log.connect(self.append_log_to_console)
             self.post_detection_thread.error.connect(self.on_post_detection_error)
+            self.post_detection_thread.finished.connect(self.post_detection_thread.deleteLater)
+            self.active_threads.append(self.post_detection_thread)
             self.post_detection_thread.start()
 
     def on_post_detection_finished(self, detected_posts):
         self.all_files_map[self.current_creator_url] = detected_posts
         self.all_detected_posts = detected_posts
-        self.post_url_map = {post_title: (post_id, thumbnail_url) for post_title, (post_id, thumbnail_url) in self.all_detected_posts}
-        self.append_log_to_console(f"[DEBUG] Total detected posts: {len(self.all_detected_posts)}", "INFO")
+        self.start_population_thread(detected_posts)
+
+    def start_population_thread(self, detected_posts):
+        self.background_task_label.setText("Populating posts...")
+        self.background_task_progress.setRange(0, 0)
+        self.post_population_thread = PostPopulationThread(detected_posts)
+        self.post_population_thread.finished.connect(self.on_post_population_finished)
+        self.post_population_thread.log.connect(self.append_log_to_console)
+        self.post_population_thread.finished.connect(self.post_population_thread.deleteLater)
+        self.active_threads.append(self.post_population_thread)
+        self.post_population_thread.start()
+
+    def on_post_population_finished(self, post_url_map, all_detected_posts):
+        self.post_url_map = post_url_map
+        self.all_detected_posts = all_detected_posts
         for post_title, (post_id, thumbnail_url) in self.all_detected_posts:
-            self.add_list_item(post_title, thumbnail_url)
             self.checked_urls[post_id] = False
         for i, (queue_url, _) in enumerate(self.creator_queue):
             if queue_url == self.current_creator_url:
                 self.creator_queue[i] = (self.current_creator_url, True)
                 self.update_creator_queue_list()
                 break
-        self.update_checked_posts()
         self.filter_items()
-        self.append_log_to_console(f"[DEBUG] Displayed {self.creator_post_list.count()} posts for creator {self.current_creator_url}", "INFO")
+        self.append_log_to_console(f"[DEBUG] Populated {len(self.all_detected_posts)} posts for creator {self.current_creator_url}", "INFO")
         self.background_task_progress.setRange(0, 100)
         self.background_task_progress.setValue(0)
         self.background_task_label.setText("Idle")
@@ -847,14 +1000,15 @@ class CreatorDownloaderTab(QWidget):
         total_posts = 0
         for url, _ in self.creator_queue:
             if url not in self.all_files_map:
-                self.background_task_label.setText("Detecting posts from link...")
-                self.background_task_progress.setRange(0, 0)
                 thread = PostDetectionThread(url)
                 thread.finished.connect(lambda posts, u=url: self.on_check_all_posts_detected(u, posts))
                 thread.log.connect(self.append_log_to_console)
                 thread.error.connect(self.on_post_detection_error)
-                thread.start()
+                thread.finished.connect(thread.deleteLater)
                 self.active_threads.append(thread)
+                thread.start()
+                self.background_task_label.setText("Detecting posts from link...")
+                self.background_task_progress.setRange(0, 0)
             else:
                 total_posts += len(self.all_files_map[url])
         self.creator_post_count_label.setText(f"Posts: {total_posts}")
@@ -913,11 +1067,19 @@ class CreatorDownloaderTab(QWidget):
         self.prepare_files_for_download(urls)
 
     def prepare_files_for_download(self, urls):
+        if hasattr(self, 'file_preparation_thread') and self.file_preparation_thread is not None and self.file_preparation_thread.isRunning():
+            self.append_log_to_console("[WARNING] File preparation already in progress. Please wait.", "WARNING")
+            return
+
         if self.download_all_links.isChecked():
             post_ids = []
             for url in urls:
                 post_ids.extend([post_id for _, (post_id, _) in self.all_files_map.get(url, [])])
         else:
+            if not self.current_creator_url:
+                self.append_log_to_console("[WARNING] No creator currently viewed to download.", "WARNING")
+                self.creator_download_finished()
+                return
             current_creator_posts = {post_id for _, (post_id, _) in self.all_files_map.get(self.current_creator_url, [])}
             post_ids = [post_id for post_id in self.posts_to_download if post_id in current_creator_posts]
 
@@ -942,7 +1104,16 @@ class CreatorDownloaderTab(QWidget):
         self.file_preparation_thread.finished.connect(lambda files, files_map: self.on_file_preparation_finished(urls, files, files_map))
         self.file_preparation_thread.log.connect(self.append_log_to_console)
         self.file_preparation_thread.error.connect(self.on_file_preparation_error)
+        self.file_preparation_thread.finished.connect(self.cleanup_file_preparation_thread)
+        self.active_threads.append(self.file_preparation_thread)
         self.file_preparation_thread.start()
+
+    def cleanup_file_preparation_thread(self):
+        """Clean up the file preparation thread after it finishes."""
+        if self.file_preparation_thread in self.active_threads:
+            self.active_threads.remove(self.file_preparation_thread)
+        self.file_preparation_thread.deleteLater()
+        self.file_preparation_thread = None
 
     def update_background_progress(self, value):
         self.background_task_progress.setValue(value)
@@ -968,16 +1139,17 @@ class CreatorDownloaderTab(QWidget):
             f"Overall Progress (0/{self.total_files_to_download} files, 0/{self.total_posts_to_download} posts)"
         )
         max_concurrent = self.parent.settings_tab.get_simultaneous_downloads()
-        self.thread = CreatorDownloadThread(service, creator_id, self.parent.download_folder, 
-                                           self.posts_to_download, files_to_download, files_to_posts_map, 
-                                           self.creator_console, self.other_files_dir, max_concurrent)
-        self.active_threads.append(self.thread)
-        self.thread.file_progress.connect(self.update_creator_file_progress)
-        self.thread.file_completed.connect(self.update_file_completion)
-        self.thread.post_completed.connect(self.update_post_completion)
-        self.thread.log.connect(self.append_log_to_console)
-        self.thread.finished.connect(lambda: self.cleanup_thread(self.thread, remaining_urls))
-        self.thread.start()
+        thread = CreatorDownloadThread(service, creator_id, self.parent.download_folder, 
+                                      self.posts_to_download, files_to_download, files_to_posts_map, 
+                                      self.creator_console, self.other_files_dir, max_concurrent)
+        thread.file_progress.connect(self.update_creator_file_progress)
+        thread.file_completed.connect(self.update_file_completion)
+        thread.post_completed.connect(self.update_post_completion)
+        thread.log.connect(self.append_log_to_console)
+        thread.finished.connect(lambda: self.cleanup_thread(thread, remaining_urls))
+        thread.finished.connect(thread.deleteLater)
+        self.active_threads.append(thread)
+        thread.start()
 
     def on_file_preparation_error(self, error_message):
         self.append_log_to_console(f"[ERROR] {error_message}", "ERROR")
@@ -987,23 +1159,35 @@ class CreatorDownloaderTab(QWidget):
         self.creator_download_finished()
 
     def process_next_creator(self, remaining_urls):
+        """Process the next creator or finish if no more remain."""
         if not remaining_urls:
             self.creator_download_finished()
             return
         url = remaining_urls[0]
         new_remaining_urls = remaining_urls[1:]
+        self.append_log_to_console(f"[INFO] Moving to next creator: {url}", "INFO")
+        self.completed_files.clear()
+        self.completed_posts.clear()  
         self.prepare_files_for_download([url] + new_remaining_urls)
 
     def cleanup_thread(self, thread, remaining_urls):
+        """Clean up a download thread and proceed to the next creator or finish."""
         if thread in self.active_threads:
             self.active_threads.remove(thread)
-        if not self.active_threads:
+        if self.total_files_to_download > 0 and len(self.completed_files) >= self.total_files_to_download:
+            self.append_log_to_console(f"[DEBUG] All files downloaded for current creator. Proceeding.", "INFO")
             self.process_next_creator(remaining_urls)
+        elif not self.active_threads and not remaining_urls:
+            self.append_log_to_console(f"[DEBUG] No more active threads or creators. Finishing.", "INFO")
+            self.creator_download_finished()
+        else:
+            self.append_log_to_console(f"[DEBUG] Waiting for remaining files: {len(self.completed_files)}/{self.total_files_to_download}", "INFO")
 
     def cancel_creator_download(self):
         if self.active_threads:
             for thread in self.active_threads[:]:
-                thread.stop()
+                if hasattr(thread, 'stop'):
+                    thread.stop()
             self.append_log_to_console("[WARNING] All downloads cancelled by user", "WARNING")
             self.creator_file_progress.setStyleSheet("QProgressBar { border: 1px solid #4A5B7A; border-radius: 5px; background: #2A3B5A; } QProgressBar::chunk { background: #D4A017; }")
             self.creator_overall_progress.setStyleSheet("QProgressBar { border: 1px solid #4A5B7A; border-radius: 5px; background: #2A3B5A; } QProgressBar::chunk { background: #D4A017; }")
@@ -1020,6 +1204,7 @@ class CreatorDownloaderTab(QWidget):
             self.background_task_progress.setRange(0, 100)
             self.background_task_progress.setValue(0)
             self.background_task_label.setText("Idle")
+            self.file_preparation_thread = None
 
     def update_creator_file_progress(self, file_index, progress):
         if self.current_file_index == file_index or self.current_file_index == -1:
@@ -1028,6 +1213,7 @@ class CreatorDownloaderTab(QWidget):
             self.creator_file_progress_label.setText(f"File Progress {progress}%")
 
     def update_file_completion(self, file_index, file_url):
+        """Update file completion status and check overall progress."""
         if file_url not in self.completed_files:
             self.completed_files.add(file_url)
             self.append_log_to_console(f"[DEBUG] File completed: {file_url}, Total completed: {len(self.completed_files)}/{self.total_files_to_download}", "INFO")
@@ -1038,6 +1224,7 @@ class CreatorDownloaderTab(QWidget):
             self.creator_file_progress_label.setText("File Progress 0%")
 
     def update_overall_progress(self):
+        """Update the overall progress bar and label."""
         if self.total_files_to_download > 0:
             completed_count = len(self.completed_files)
             percentage = int((completed_count / self.total_files_to_download) * 100)
@@ -1055,49 +1242,65 @@ class CreatorDownloaderTab(QWidget):
             )
 
     def update_post_completion(self, post_id):
+        """Update post completion status and check overall progress."""
         self.completed_posts.add(post_id)
         self.append_log_to_console(f"[INFO] Post {post_id} fully downloaded.", "INFO")
         self.update_overall_progress()
+        if len(self.completed_posts) == self.total_posts_to_download and self.total_files_to_download == len(self.completed_files):
+            self.append_log_to_console(f"[DEBUG] All posts and files completed for current creator.", "INFO")
 
     def creator_download_finished(self):
+        """Reset UI state after download completes or is cancelled."""
         self.downloading = False
         self.parent.tabs.setTabEnabled(0, True)
         self.parent.status_label.setText("Idle")
         self.creator_download_btn.setEnabled(True)
         self.creator_cancel_btn.setEnabled(False)
-        self.append_log_to_console("[INFO] Download process ended", "INFO")
+        self.append_log_to_console("[INFO] Download process completed", "INFO")
+        
         if self.total_files_to_download > 0 and len(self.completed_files) == self.total_files_to_download:
             self.creator_file_progress.setStyleSheet("QProgressBar { border: 1px solid #4A5B7A; border-radius: 5px; background: #2A3B5A; } QProgressBar::chunk { background: green; }")
             self.creator_overall_progress.setStyleSheet("QProgressBar { border: 1px solid #4A5B7A; border-radius: 5px; background: #2A3B5A; } QProgressBar::chunk { background: green; }")
             self.creator_overall_progress_label.setText("Downloads Complete")
+        else:
+            self.creator_file_progress.setStyleSheet("QProgressBar { border: 1px solid #4A5B7A; border-radius: 5px; background: #2A3B5A; } QProgressBar::chunk { background: #4A5B7A; }")
+            self.creator_overall_progress.setStyleSheet("QProgressBar { border: 1px solid #4A5B7A; border-radius: 5px; background: #2A3B5A; } QProgressBar::chunk { background: #4A5B7A; }")
+            self.creator_overall_progress_label.setText(f"Overall Progress ({len(self.completed_files)}/{self.total_files_to_download} files, {len(self.completed_posts)}/{self.total_posts_to_download} posts)")
+        
         self.total_files_to_download = 0
         self.completed_files.clear()
+        self.completed_posts.clear()
+        self.current_file_index = -1
         self.background_task_progress.setRange(0, 100)
         self.background_task_progress.setValue(0)
         self.background_task_label.setText("Idle")
+        self.file_preparation_thread = None
 
     def toggle_check_all(self, state):
-        is_checked = state == 2
-        new_state = Qt.CheckState.Checked if is_checked else Qt.CheckState.Unchecked
-        for post_title, (post_id, _) in self.all_detected_posts:
-            self.checked_urls[post_id] = (new_state == Qt.CheckState.Checked)
-        
-        for i in range(self.creator_post_list.count()):
-            item = self.creator_post_list.item(i)
-            if not item.isHidden():
-                widget = self.creator_post_list.itemWidget(item)
-                if widget:
-                    post_title = widget.label.text()
-                    post_id, _ = self.post_url_map.get(post_title, (None, None))
-                    if post_id:
-                        widget.check_box.blockSignals(True)
-                        widget.check_box.setCheckState(new_state)
-                        widget.check_box.blockSignals(False)
-        
-        self.update_checked_posts()
-        self.append_log_to_console(f"[DEBUG] Check ALL state updated to {is_checked}, checked_urls: {self.checked_urls}", "INFO")
+        if self.checkbox_toggle_thread and self.checkbox_toggle_thread.isRunning():
+            self.append_log_to_console("[WARNING] Checkbox toggle already in progress. Please wait.", "WARNING")
+            return
+        self.background_task_label.setText("Updating checkboxes...")
+        self.background_task_progress.setRange(0, 0)
+        self.checkbox_toggle_thread = CheckboxToggleThread(self.all_detected_posts, self.checked_urls, state)
+        self.checkbox_toggle_thread.finished.connect(self.on_toggle_check_all_finished)
+        self.checkbox_toggle_thread.log.connect(self.append_log_to_console)
+        self.checkbox_toggle_thread.finished.connect(self.checkbox_toggle_thread.deleteLater)
+        self.active_threads.append(self.checkbox_toggle_thread)
+        self.checkbox_toggle_thread.start()
+
+    def on_toggle_check_all_finished(self, checked_urls, posts_to_download):
+        self.checked_urls = checked_urls
+        self.posts_to_download = posts_to_download
+        self.filter_items()
+        self.background_task_progress.setRange(0, 100)
+        self.background_task_progress.setValue(0)
+        self.background_task_label.setText("Idle")
+        self.append_log_to_console(f"[DEBUG] Check ALL toggle finished, checked posts: {len(self.posts_to_download)}", "INFO")
 
     def toggle_download_all_links(self, state):
+        self.background_task_label.setText("Updating download mode...")
+        self.background_task_progress.setRange(0, 0)
         is_checked = state == 2
         if is_checked:
             self.creator_check_all.setEnabled(False)
@@ -1121,6 +1324,9 @@ class CreatorDownloaderTab(QWidget):
             self.update_checked_posts()
             self.filter_items()
             self.append_log_to_console("[INFO] Download All Links disabled. Reverted to current creator.", "INFO")
+        self.background_task_progress.setRange(0, 100)
+        self.background_task_progress.setValue(0)
+        self.background_task_label.setText("Idle")
 
     def update_checked_posts(self):
         if self.download_all_links.isChecked():
@@ -1147,50 +1353,40 @@ class CreatorDownloaderTab(QWidget):
         )
 
     def filter_items(self):
-        search_text = self.creator_search_input.text().lower()
-        current_states = {}
-        for i in range(self.creator_post_list.count()):
-            item = self.creator_post_list.item(i)
-            if not item.isHidden():
-                widget = self.creator_post_list.itemWidget(item)
-                post_title = widget.label.text()
-                post_id, _ = self.post_url_map.get(post_title, (None, None))
-                if post_id:
-                    current_states[post_id] = widget.check_box.isChecked()
+        if hasattr(self, 'filter_thread') and self.filter_thread is not None and self.filter_thread.isRunning():
+            self.append_log_to_console("[WARNING] Filtering already in progress. Please wait.", "WARNING")
+            return
+        self.background_task_label.setText("Filtering posts...")
+        self.background_task_progress.setRange(0, 0)
+        self.filter_thread = FilterThread(self.all_detected_posts, self.checked_urls, self.creator_search_input.text())
+        self.filter_thread.finished.connect(self.on_filter_finished)
+        self.filter_thread.log.connect(self.append_log_to_console)
+        self.filter_thread.finished.connect(self.cleanup_filter_thread)
+        self.active_threads.append(self.filter_thread)
+        self.filter_thread.start()
 
-        self.append_log_to_console(f"[DEBUG] Current checkbox states before filtering: {current_states}", "INFO")
-        
+    def on_filter_finished(self, filtered_items):
         self.creator_post_list.clear()
         self.previous_selected_widget = None
 
-        for post_id in self.checked_urls:
-            if post_id in current_states:
-                self.checked_urls[post_id] = current_states[post_id]
-
-        for post_title, (post_id, thumbnail_url) in self.all_detected_posts:
-            if not search_text or search_text in post_title.lower():
-                self.add_list_item(post_title, thumbnail_url)
-                self.append_log_to_console(f"[DEBUG] Adding post to list: {post_title} (ID: {post_id})", "INFO")
-
-        for i in range(self.creator_post_list.count()):
-            item = self.creator_post_list.item(i)
-            if not item.isHidden():
-                widget = self.creator_post_list.itemWidget(item)
-                post_title = widget.label.text()
-                post_id, _ = self.post_url_map.get(post_title, (None, None))
-                if widget and post_id:
-                    widget.check_box.blockSignals(True)
-                    widget.check_box.setChecked(self.checked_urls.get(post_id, False))
-                    widget.check_box.blockSignals(False)
-                if self.download_all_links.isChecked():
-                    widget.check_box.setEnabled(False)
-
-        self.append_log_to_console(f"[DEBUG] Updated checked_urls after filtering: {self.checked_urls}", "INFO")
+        for post_title, post_id, thumbnail_url, is_checked in filtered_items:
+            self.add_list_item(post_title, thumbnail_url, is_checked)
 
         self.update_check_all_state()
         self.update_checked_posts()
+        self.background_task_progress.setRange(0, 100)
+        self.background_task_progress.setValue(0)
+        self.background_task_label.setText("Idle")
+        self.append_log_to_console(f"[DEBUG] Filtering completed, displayed {self.creator_post_list.count()} posts", "INFO")
 
-    def add_list_item(self, text, url):
+    def cleanup_filter_thread(self):
+        """Clean up the filter thread after it finishes."""
+        if self.filter_thread in self.active_threads:
+            self.active_threads.remove(self.filter_thread)
+        self.filter_thread.deleteLater()
+        self.filter_thread = None
+                
+    def add_list_item(self, text, url, is_checked):
         item = QListWidgetItem()
         item.setData(Qt.UserRole, url)
         widget = QWidget()
@@ -1200,9 +1396,7 @@ class CreatorDownloaderTab(QWidget):
 
         check_box = QCheckBox()
         check_box.setStyleSheet("color: white;")
-        post_id = self.post_url_map.get(text, (None, None))[0]
-        initial_state = self.checked_urls.get(post_id, False)
-        check_box.setChecked(initial_state)
+        check_box.setChecked(is_checked)
         check_box.clicked.connect(lambda: self.toggle_checkbox_state(text))
         if self.download_all_links.isChecked():
             check_box.setEnabled(False)
@@ -1222,8 +1416,13 @@ class CreatorDownloaderTab(QWidget):
         widget.setStyleSheet("background-color: #2A3B5A; border-radius: 5px;")
 
     def toggle_checkbox_state(self, post_title):
+        self.background_task_label.setText("Toggling checkbox...")
+        self.background_task_progress.setRange(0, 0)
         post_id, _ = self.post_url_map.get(post_title, (None, None))
         if not post_id:
+            self.background_task_progress.setRange(0, 100)
+            self.background_task_progress.setValue(0)
+            self.background_task_label.setText("Idle")
             return
         current_state = self.checked_urls.get(post_id, False)
         new_state = not current_state
@@ -1233,9 +1432,12 @@ class CreatorDownloaderTab(QWidget):
             widget.check_box.blockSignals(True)
             widget.check_box.setChecked(new_state)
             widget.check_box.blockSignals(False)
-        self.append_log_to_console(f"[DEBUG] Checkbox toggled for post {post_id} to {new_state}, checked_urls count: {len(self.checked_urls)}", "INFO")
         self.update_checked_posts()
         self.update_check_all_state()
+        self.append_log_to_console(f"[DEBUG] Checkbox toggled for post {post_id} to {new_state}", "INFO")
+        self.background_task_progress.setRange(0, 100)
+        self.background_task_progress.setValue(0)
+        self.background_task_label.setText("Idle")
 
     def get_widget_for_post_title(self, post_title):
         for i in range(self.creator_post_list.count()):

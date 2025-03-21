@@ -178,11 +178,18 @@ class PostDetectionThread(QThread):
     def detect_files(self, post):
         detected_files = []
         allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.zip', '.mp4', '.pdf', '.7z', 
-                          '.mp3', '.wav', '.rar', '.mov', '.docx', '.psd']
+                              '.mp3', '.wav', '.rar', '.mov', '.docx', '.psd']
+
+        # Helper function to get the effective extension
+        def get_effective_extension(file_path, file_name):
+            name_ext = os.path.splitext(file_name)[1].lower()
+            path_ext = os.path.splitext(file_path)[1].lower()
+            return name_ext if name_ext else path_ext
+
         if 'file' in post and post['file'] and 'path' in post['file']:
             file_path = post['file']['path']
             file_name = post['file'].get('name', '')
-            file_ext = os.path.splitext(file_path)[1].lower() or os.path.splitext(file_name)[1].lower()
+            file_ext = get_effective_extension(file_path, file_name)
             file_url = urljoin("https://kemono.su", file_path)
             if 'f=' not in file_url and file_name:
                 file_url += f"?f={file_name}"
@@ -194,7 +201,7 @@ class PostDetectionThread(QThread):
                 if isinstance(attachment, dict) and 'path' in attachment:
                     attachment_path = attachment['path']
                     attachment_name = attachment.get('name', '')
-                    attachment_ext = os.path.splitext(attachment_path)[1].lower() or os.path.splitext(attachment_name)[1].lower()
+                    attachment_ext = get_effective_extension(attachment_path, attachment_name)
                     attachment_url = urljoin("https://kemono.su", attachment_path)
                     if 'f=' not in attachment_url and attachment_name:
                         attachment_url += f"?f={attachment_name}"
@@ -235,10 +242,16 @@ class FilePreparationThread(QThread):
         files_to_download = []
         self.log.emit(f"[DEBUG] Detecting files for post with allowed extensions: {allowed_extensions}", "INFO")
         
+        # Helper function to get the effective extension
+        def get_effective_extension(file_path, file_name):
+            name_ext = os.path.splitext(file_name)[1].lower()
+            path_ext = os.path.splitext(file_path)[1].lower()
+            return name_ext if name_ext else path_ext
+
         if 'file' in post and post['file'] and 'path' in post['file']:
             file_path = post['file']['path']
             file_name = post['file'].get('name', '')
-            file_ext = os.path.splitext(file_path)[1].lower() or os.path.splitext(file_name)[1].lower()
+            file_ext = get_effective_extension(file_path, file_name)
             file_url = urljoin("https://kemono.su", file_path)
             if 'f=' not in file_url and file_name:
                 file_url += f"?f={file_name}"
@@ -255,7 +268,7 @@ class FilePreparationThread(QThread):
                 if isinstance(attachment, dict) and 'path' in attachment:
                     attachment_path = attachment['path']
                     attachment_name = attachment.get('name', '')
-                    attachment_ext = os.path.splitext(attachment_path)[1].lower() or os.path.splitext(attachment_name)[1].lower()
+                    attachment_ext = get_effective_extension(attachment_path, attachment_name)
                     attachment_url = urljoin("https://kemono.su", attachment_path)
                     if 'f=' not in attachment_url and attachment_name:
                         attachment_url += f"?f={attachment_name}"
@@ -271,7 +284,7 @@ class FilePreparationThread(QThread):
             soup = BeautifulSoup(post['content'], 'html.parser')
             for img in soup.select('img[src]'):
                 img_url = urljoin("https://kemono.su", img['src'])
-                img_ext = os.path.splitext(img_url)[1].lower()
+                img_ext = os.path.splitext(img_url)[1].lower() 
                 img_name = os.path.basename(img_url)
                 self.log.emit(f"[DEBUG] Checking content image: {img_name} ({img_ext})", "INFO")
                 if '.jpg' in allowed_extensions and img_ext in ['.jpg', '.jpeg']:
@@ -882,10 +895,17 @@ class PostDownloaderTab(QWidget):
 
     def detect_files(self, post, allowed_extensions):
         detected_files = []
+        
+        # Helper function to get the effective extension
+        def get_effective_extension(file_path, file_name):
+            name_ext = os.path.splitext(file_name)[1].lower()
+            path_ext = os.path.splitext(file_path)[1].lower()
+            return name_ext if name_ext else path_ext
+
         if 'file' in post and post['file'] and 'path' in post['file']:
             file_path = post['file']['path']
             file_name = post['file'].get('name', '')
-            file_ext = os.path.splitext(file_path)[1].lower() or os.path.splitext(file_name)[1].lower()
+            file_ext = get_effective_extension(file_path, file_name)
             file_url = urljoin("https://kemono.su", file_path)
             if 'f=' not in file_url and file_name:
                 file_url += f"?f={file_name}"
@@ -899,7 +919,7 @@ class PostDownloaderTab(QWidget):
                 if isinstance(attachment, dict) and 'path' in attachment:
                     attachment_path = attachment['path']
                     attachment_name = attachment.get('name', '')
-                    attachment_ext = os.path.splitext(attachment_path)[1].lower() or os.path.splitext(attachment_name)[1].lower()
+                    attachment_ext = get_effective_extension(attachment_path, attachment_name)
                     attachment_url = urljoin("https://kemono.su", attachment_path)
                     if 'f=' not in attachment_url and attachment_name:
                         attachment_url += f"?f={attachment_name}"
