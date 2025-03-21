@@ -1,9 +1,8 @@
 import os
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, 
                              QGroupBox, QGridLayout, QLabel, QSlider, QSpinBox, 
-                             QCheckBox, QFileDialog, QMessageBox)
+                             QFileDialog, QMessageBox)
 from PyQt6.QtCore import Qt, QSettings, pyqtSignal
-from PyQt6.QtGui import QColor
 
 class SettingsTab(QWidget):
     settings_applied = pyqtSignal()
@@ -16,8 +15,6 @@ class SettingsTab(QWidget):
             "base_folder_name": "Kemono Downloader",
             "base_directory": os.getcwd(),
             "simultaneous_downloads": 5,
-            "show_notifications": True,
-            "theme_color": "#1A2A44"
         }
         self.settings = self.load_settings()
         self.temp_settings = self.settings.copy()
@@ -28,20 +25,18 @@ class SettingsTab(QWidget):
         settings_dict["base_folder_name"] = self.qsettings.value("base_folder_name", self.default_settings["base_folder_name"], type=str)
         settings_dict["base_directory"] = self.qsettings.value("base_directory", self.default_settings["base_directory"], type=str)
         settings_dict["simultaneous_downloads"] = self.qsettings.value("simultaneous_downloads", self.default_settings["simultaneous_downloads"], type=int)
-        settings_dict["show_notifications"] = self.qsettings.value("show_notifications", self.default_settings["show_notifications"], type=bool)
-        settings_dict["theme_color"] = self.qsettings.value("theme_color", self.default_settings["theme_color"], type=str)
         return settings_dict
 
     def save_settings(self):
         self.qsettings.setValue("base_folder_name", self.settings["base_folder_name"])
         self.qsettings.setValue("base_directory", self.settings["base_directory"])
         self.qsettings.setValue("simultaneous_downloads", self.settings["simultaneous_downloads"])
-        self.qsettings.setValue("show_notifications", self.settings["show_notifications"])
-        self.qsettings.setValue("theme_color", self.settings["theme_color"])
         self.qsettings.sync()
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
+        
+        # Folder Settings Group
         folder_group = QGroupBox("Folder Settings")
         folder_group.setStyleSheet("QGroupBox { color: white; font-weight: bold; padding: 10px; }")
         folder_layout = QGridLayout()
@@ -62,6 +57,7 @@ class SettingsTab(QWidget):
         folder_group.setLayout(folder_layout)
         layout.addWidget(folder_group)
 
+        # Download Settings Group
         download_group = QGroupBox("Download Settings")
         download_group.setStyleSheet("QGroupBox { color: white; font-weight: bold; padding: 10px; }")
         download_layout = QGridLayout()
@@ -82,25 +78,10 @@ class SettingsTab(QWidget):
         download_group.setLayout(download_layout)
         layout.addWidget(download_group)
 
-        ui_group = QGroupBox("UI Customization")
-        ui_group.setStyleSheet("QGroupBox { color: white; font-weight: bold; padding: 10px; }")
-        ui_layout = QGridLayout()
-        self.show_notifications_check = QCheckBox("Show Notifications")
-        self.show_notifications_check.setChecked(self.temp_settings["show_notifications"])
-        self.show_notifications_check.setStyleSheet("color: white;")
-        self.show_notifications_check.stateChanged.connect(lambda state: self.update_temp_setting("show_notifications", state == 2))
-        ui_layout.addWidget(self.show_notifications_check, 0, 0, 1, 2)
-        self.theme_color_check = QCheckBox("Dark Theme (Default)")
-        self.theme_color_check.setChecked(self.temp_settings["theme_color"] == "#1A2A44")
-        self.theme_color_check.setStyleSheet("color: white;")
-        self.theme_color_check.stateChanged.connect(self.update_temp_theme_color)
-        ui_layout.addWidget(self.theme_color_check, 1, 0, 1, 2)
-        ui_group.setLayout(ui_layout)
-        layout.addWidget(ui_group)
-
+        # Apply Button
         apply_button = QPushButton("Apply Changes")
         apply_button.setStyleSheet("background: #4A5B7A; padding: 8px; border-radius: 5px;")
-        apply_button.clicked.connect(self.apply_settings)
+        apply_button.clicked.connect(self.confirm_and_apply_settings)
         layout.addWidget(apply_button)
         layout.addStretch()
 
@@ -122,10 +103,23 @@ class SettingsTab(QWidget):
         self.download_slider.blockSignals(False)
         self.download_spinbox.blockSignals(False)
 
-    def update_temp_theme_color(self, state):
-        self.temp_settings["theme_color"] = "#1A2A44" if state == 2 else "#F0F0F0"
+    def confirm_and_apply_settings(self):
+        # Show confirmation dialog
+        reply = QMessageBox.question(
+            self,
+            "Confirm Settings Change",
+            "Are you sure you want to apply these settings?\n\n"
+            f"Folder Name: {self.temp_settings['base_folder_name']}\n"
+            f"Save Directory: {self.temp_settings['base_directory']}\n"
+            f"Simultaneous Downloads: {self.temp_settings['simultaneous_downloads']}",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
 
-    def apply_settings(self):
+        if reply == QMessageBox.StandardButton.No:
+            return  # User canceled, do nothing
+
+        # Validate settings before applying
         if not self.temp_settings["base_folder_name"].strip():
             QMessageBox.warning(self, "Invalid Input", "Folder name cannot be empty.")
             self.folder_name_input.setText(self.settings["base_folder_name"])
@@ -137,6 +131,7 @@ class SettingsTab(QWidget):
             self.temp_settings["base_directory"] = self.settings["base_directory"]
             return
 
+        # Apply settings
         self.settings = self.temp_settings.copy()
         self.save_settings()
         old_base_folder = self.parent.base_folder
@@ -152,18 +147,17 @@ class SettingsTab(QWidget):
             self.parent.creator_tab.cache_dir = self.parent.cache_folder
             self.parent.creator_tab.other_files_dir = self.parent.other_files_folder
 
-        palette = self.parent.palette()
-        theme_color = QColor(self.settings["theme_color"])
-        if not theme_color.isValid():
-            QMessageBox.warning(self, "Invalid Color", "The theme color is invalid. Reverting to default.")
-            theme_color = QColor("#1A2A44")
-        palette.setColor(palette.ColorRole.Window, theme_color)
-        self.parent.setPalette(palette)
+        self.settings_applied.emit()
 
-        if self.settings["show_notifications"]:
-            QMessageBox.information(self, "Settings Updated", "Settings have been applied successfully.")
-
-        self.settings_applied.emit()  
+        # Show success notification
+        QMessageBox.information(
+            self,
+            "Settings Applied",
+            "Settings have been successfully applied!\n\n"
+            f"Folder Name: {self.settings['base_folder_name']}\n"
+            f"Save Directory: {self.settings['base_directory']}\n"
+            f"Simultaneous Downloads: {self.settings['simultaneous_downloads']}"
+        )
 
     def get_simultaneous_downloads(self):
         return self.settings["simultaneous_downloads"]

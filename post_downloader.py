@@ -177,7 +177,8 @@ class PostDetectionThread(QThread):
 
     def detect_files(self, post):
         detected_files = []
-        allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.zip', '.mp4', '.pdf', '.7z']
+        allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.zip', '.mp4', '.pdf', '.7z', 
+                          '.mp3', '.wav', '.rar', '.mov', '.docx', '.psd']
         if 'file' in post and post['file'] and 'path' in post['file']:
             file_path = post['file']['path']
             file_name = post['file'].get('name', '')
@@ -546,7 +547,7 @@ class PostDownloaderTab(QWidget):
         self.post_url_input.setPlaceholderText("Enter post URL (e.g., https://kemono.su/patreon/user/12345678/post/123456789)")
         self.post_url_input.setStyleSheet("padding: 5px; border-radius: 5px;")
         post_url_layout.addWidget(self.post_url_input)
-        self.post_add_to_queue_btn = QPushButton(qta.icon('fa5s.plus'), "Add to Queue")
+        self.post_add_to_queue_btn = QPushButton(qta.icon('fa5s.plus', color='white'), "Add to Queue")
         self.post_add_to_queue_btn.clicked.connect(self.add_post_to_queue)
         self.post_add_to_queue_btn.setStyleSheet("background: #4A5B7A; padding: 5px; border-radius: 5px;")
         post_url_layout.addWidget(self.post_add_to_queue_btn)
@@ -583,11 +584,11 @@ class PostDownloaderTab(QWidget):
         left_layout.addWidget(self.post_console)
 
         post_btn_layout = QHBoxLayout()
-        self.post_download_btn = QPushButton(qta.icon('fa5s.download'), "Download")
+        self.post_download_btn = QPushButton(qta.icon('fa5s.download', color='white'), "Download")
         self.post_download_btn.clicked.connect(self.start_post_download)
         self.post_download_btn.setStyleSheet("background: #4A5B7A; padding: 8px; border-radius: 5px;")
         post_btn_layout.addWidget(self.post_download_btn)
-        self.post_cancel_btn = QPushButton(qta.icon('fa5s.times'), "Cancel")
+        self.post_cancel_btn = QPushButton(qta.icon('fa5s.times', color='white'), "Cancel")
         self.post_cancel_btn.clicked.connect(self.cancel_post_download)
         self.post_cancel_btn.setStyleSheet("background: #4A5B7A; padding: 8px; border-radius: 5px;")
         self.post_cancel_btn.setEnabled(False)
@@ -627,12 +628,14 @@ class PostDownloaderTab(QWidget):
         self.post_filter_checks = {
             '.jpg': QCheckBox("JPG"), '.jpeg': QCheckBox("JPEG"), '.png': QCheckBox("PNG"),
             '.zip': QCheckBox("ZIP"), '.mp4': QCheckBox("MP4"), '.gif': QCheckBox("GIF"),
-            '.pdf': QCheckBox("PDF"), '.7z': QCheckBox("7Z")
+            '.pdf': QCheckBox("PDF"), '.7z': QCheckBox("7Z"),
+            '.mp3': QCheckBox("MP3"), '.wav': QCheckBox("WAV"), '.rar': QCheckBox("RAR"),
+            '.mov': QCheckBox("MOV"), '.docx': QCheckBox("DOCX"), '.psd': QCheckBox("PSD")
         }
         for i, (ext, check) in enumerate(self.post_filter_checks.items()):
             check.setChecked(True)
             check.stateChanged.connect(self.filter_items)
-            filter_layout.addWidget(check, i // 3, i % 3)
+            filter_layout.addWidget(check, i // 4, i % 4)
         self.post_filter_group.setLayout(filter_layout)
         file_list_layout.addWidget(self.post_filter_group)
         self.post_file_list = QListWidget()
@@ -645,7 +648,7 @@ class PostDownloaderTab(QWidget):
         self.post_file_count_label = QLabel("Files: 0")
         self.post_file_count_label.setStyleSheet("color: white;")
         bottom_layout.addWidget(self.post_file_count_label)
-        self.post_view_button = QPushButton(qta.icon('fa5s.eye'), "")
+        self.post_view_button = QPushButton(qta.icon('fa5s.eye', color='white'), "")
         self.post_view_button.setStyleSheet("background: #4A5B7A; padding: 2px; border-radius: 5px; min-width: 30px; max-width: 30px; min-height: 30px; max-height: 30px;")
         self.post_view_button.clicked.connect(self.view_current_item)
         self.post_view_button.setEnabled(False)
@@ -770,7 +773,7 @@ class PostDownloaderTab(QWidget):
             layout = QHBoxLayout()
             layout.setContentsMargins(0, 0, 0, 0)
             layout.setSpacing(5)
-            view_button = QPushButton(qta.icon('fa5s.eye'), "")
+            view_button = QPushButton(qta.icon('fa5s.eye', color='white'), "")
             view_button.setStyleSheet("background: #4A5B7A; padding: 2px; border-radius: 5px; min-width: 30px; max-width: 30px; min-height: 30px; max-height: 30px;")
             view_button.clicked.connect(self.create_view_handler(url, checked))
             layout.addWidget(view_button)
@@ -778,7 +781,7 @@ class PostDownloaderTab(QWidget):
             label.setStyleSheet("color: white;")
             label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
             layout.addWidget(label, stretch=1)
-            remove_button = QPushButton(qta.icon('fa5s.times'), "")
+            remove_button = QPushButton(qta.icon('fa5s.times', color='white'), "")
             remove_button.setStyleSheet("background: #4A5B7A; padding: 2px; border-radius: 5px; min-width: 30px; max-width: 30px; min-height: 30px; max-height: 30px;")
             remove_button.clicked.connect(self.create_remove_handler(url))
             layout.addWidget(remove_button)

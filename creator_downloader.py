@@ -490,7 +490,7 @@ class CreatorDownloaderTab(QWidget):
         self.creator_url_input.setStyleSheet("padding: 5px; border-radius: 5px;")
         creator_url_layout.addWidget(self.creator_url_input)
         
-        self.creator_add_to_queue_btn = QPushButton(qta.icon('fa5s.plus'), "Add to Queue")
+        self.creator_add_to_queue_btn = QPushButton(qta.icon('fa5s.plus', color='white'), "Add to Queue")
         self.creator_add_to_queue_btn.clicked.connect(self.add_creator_to_queue)
         self.creator_add_to_queue_btn.setStyleSheet("background: #4A5B7A; padding: 5px; border-radius: 5px;")
         creator_url_layout.addWidget(self.creator_add_to_queue_btn)
@@ -535,12 +535,18 @@ class CreatorDownloaderTab(QWidget):
             '.mp4': QCheckBox("MP4"),
             '.gif': QCheckBox("GIF"),
             '.pdf': QCheckBox("PDF"),
-            '.7z': QCheckBox("7Z")
+            '.7z': QCheckBox("7Z"),
+            '.mp3': QCheckBox("MP3"),
+            '.wav': QCheckBox("WAV"),
+            '.rar': QCheckBox("RAR"),
+            '.mov': QCheckBox("MOV"),
+            '.docx': QCheckBox("DOCX"),
+            '.psd': QCheckBox("PSD")
         }
         for i, (ext, check) in enumerate(self.creator_ext_checks.items()):
             check.setChecked(True)
             check.stateChanged.connect(self.filter_items)
-            creator_ext_layout.addWidget(check, i // 3, i % 3)
+            creator_ext_layout.addWidget(check, i // 5, i % 5)
         creator_ext_group.setLayout(creator_ext_layout)
         creator_options_layout.addWidget(creator_ext_group)
         creator_options_group.setLayout(creator_options_layout)
@@ -567,11 +573,11 @@ class CreatorDownloaderTab(QWidget):
         left_layout.addWidget(self.creator_console)
 
         creator_btn_layout = QHBoxLayout()
-        self.creator_download_btn = QPushButton(qta.icon('fa5s.download'), "Download")
+        self.creator_download_btn = QPushButton(qta.icon('fa5s.download', color='white'), "Download")
         self.creator_download_btn.clicked.connect(self.start_creator_download)
         self.creator_download_btn.setStyleSheet("background: #4A5B7A; padding: 8px; border-radius: 5px;")
         creator_btn_layout.addWidget(self.creator_download_btn)
-        self.creator_cancel_btn = QPushButton(qta.icon('fa5s.times'), "Cancel")
+        self.creator_cancel_btn = QPushButton(qta.icon('fa5s.times', color='white'), "Cancel")
         self.creator_cancel_btn.clicked.connect(self.cancel_creator_download)
         self.creator_cancel_btn.setStyleSheet("background: #4A5B7A; padding: 8px; border-radius: 5px;")
         self.creator_cancel_btn.setEnabled(False)
@@ -619,7 +625,7 @@ class CreatorDownloaderTab(QWidget):
         self.creator_post_count_label.setStyleSheet("color: white;")
         bottom_layout.addWidget(self.creator_post_count_label)
 
-        self.creator_view_button = QPushButton(qta.icon('fa5s.eye'), "")
+        self.creator_view_button = QPushButton(qta.icon('fa5s.eye', color='white'), "")
         self.creator_view_button.setStyleSheet("background: #4A5B7A; padding: 2px; border-radius: 5px; min-width: 30px; max-width: 30px; min-height: 30px; max-height: 30px;")
         self.creator_view_button.clicked.connect(self.view_current_item)
         self.creator_view_button.setEnabled(False)
@@ -744,7 +750,7 @@ class CreatorDownloaderTab(QWidget):
             layout.setContentsMargins(0, 0, 0, 0)
             layout.setSpacing(5)
 
-            view_button = QPushButton(qta.icon('fa5s.eye'), "")
+            view_button = QPushButton(qta.icon('fa5s.eye', color='white'), "")
             view_button.setStyleSheet("background: #4A5B7A; padding: 2px; border-radius: 5px; min-width: 30px; max-width: 30px; min-height: 30px; max-height: 30px;")
             view_button.clicked.connect(self.create_view_handler(url, checked))
             layout.addWidget(view_button)
@@ -754,7 +760,7 @@ class CreatorDownloaderTab(QWidget):
             label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
             layout.addWidget(label, stretch=1)
 
-            remove_button = QPushButton(qta.icon('fa5s.times'), "")
+            remove_button = QPushButton(qta.icon('fa5s.times', color='white'), "")
             remove_button.setStyleSheet("background: #4A5B7A; padding: 2px; border-radius: 5px; min-width: 30px; max-width: 30px; min-height: 30px; max-height: 30px;")
             remove_button.clicked.connect(self.create_remove_handler(url))
             layout.addWidget(remove_button)
