@@ -1,7 +1,9 @@
 import os
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, 
-                             QGroupBox, QGridLayout, QLabel, QSlider, QSpinBox, 
-                             QFileDialog, QMessageBox)
+from PyQt6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, 
+    QGroupBox, QGridLayout, QLabel, QSlider, QSpinBox, 
+    QFileDialog, QMessageBox, QCheckBox
+)
 from PyQt6.QtCore import Qt, QSettings, pyqtSignal
 
 class SettingsTab(QWidget):
@@ -15,6 +17,7 @@ class SettingsTab(QWidget):
             "base_folder_name": "Kemono Downloader",
             "base_directory": os.getcwd(),
             "simultaneous_downloads": 5,
+            "auto_check_updates": True
         }
         self.settings = self.load_settings()
         self.temp_settings = self.settings.copy()
@@ -25,12 +28,14 @@ class SettingsTab(QWidget):
         settings_dict["base_folder_name"] = self.qsettings.value("base_folder_name", self.default_settings["base_folder_name"], type=str)
         settings_dict["base_directory"] = self.qsettings.value("base_directory", self.default_settings["base_directory"], type=str)
         settings_dict["simultaneous_downloads"] = self.qsettings.value("simultaneous_downloads", self.default_settings["simultaneous_downloads"], type=int)
+        settings_dict["auto_check_updates"] = self.qsettings.value("auto_check_updates", self.default_settings["auto_check_updates"], type=bool)
         return settings_dict
 
     def save_settings(self):
         self.qsettings.setValue("base_folder_name", self.settings["base_folder_name"])
         self.qsettings.setValue("base_directory", self.settings["base_directory"])
         self.qsettings.setValue("simultaneous_downloads", self.settings["simultaneous_downloads"])
+        self.qsettings.setValue("auto_check_updates", self.settings["auto_check_updates"])
         self.qsettings.sync()
 
     def setup_ui(self):
@@ -78,6 +83,21 @@ class SettingsTab(QWidget):
         download_group.setLayout(download_layout)
         layout.addWidget(download_group)
 
+        # Update Settings Group
+        update_group = QGroupBox("Update Settings")
+        update_group.setStyleSheet("QGroupBox { color: white; font-weight: bold; padding: 10px; }")
+        update_layout = QGridLayout()
+        update_layout.addWidget(QLabel("Auto Check for Updates:"), 0, 0)
+        self.auto_update_checkbox = QCheckBox()
+        self.auto_update_checkbox.setChecked(self.temp_settings["auto_check_updates"])
+        self.auto_update_checkbox.setStyleSheet("QCheckBox::indicator { width: 16px; height: 16px; }"
+                                                "QCheckBox::indicator:unchecked { background: #2A3B5A; border: 1px solid #4A5B7A; }"
+                                                "QCheckBox::indicator:checked { background: #4A6B9A; border: 1px solid #5A7BA9; }")
+        self.auto_update_checkbox.stateChanged.connect(lambda state: self.update_temp_setting("auto_check_updates", state == Qt.CheckState.Checked.value))
+        update_layout.addWidget(self.auto_update_checkbox, 0, 1)
+        update_group.setLayout(update_layout)
+        layout.addWidget(update_group)
+
         # Apply Button
         apply_button = QPushButton("Apply Changes")
         apply_button.setStyleSheet("background: #4A5B7A; padding: 8px; border-radius: 5px;")
@@ -111,13 +131,14 @@ class SettingsTab(QWidget):
             "Are you sure you want to apply these settings?\n\n"
             f"Folder Name: {self.temp_settings['base_folder_name']}\n"
             f"Save Directory: {self.temp_settings['base_directory']}\n"
-            f"Simultaneous Downloads: {self.temp_settings['simultaneous_downloads']}",
+            f"Simultaneous Downloads: {self.temp_settings['simultaneous_downloads']}\n"
+            f"Auto Check Updates: {'Enabled' if self.temp_settings['auto_check_updates'] else 'Disabled'}",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No
         )
 
         if reply == QMessageBox.StandardButton.No:
-            return  # User canceled, do nothing
+            return
 
         # Validate settings before applying
         if not self.temp_settings["base_folder_name"].strip():
@@ -156,8 +177,12 @@ class SettingsTab(QWidget):
             "Settings have been successfully applied!\n\n"
             f"Folder Name: {self.settings['base_folder_name']}\n"
             f"Save Directory: {self.settings['base_directory']}\n"
-            f"Simultaneous Downloads: {self.settings['simultaneous_downloads']}"
+            f"Simultaneous Downloads: {self.settings['simultaneous_downloads']}\n"
+            f"Auto Check Updates: {'Enabled' if self.settings['auto_check_updates'] else 'Disabled'}"
         )
 
     def get_simultaneous_downloads(self):
         return self.settings["simultaneous_downloads"]
+
+    def is_auto_check_updates_enabled(self):
+        return self.settings["auto_check_updates"]

@@ -1,11 +1,13 @@
 import sys
 import os
+import requests
+from packaging import version
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, 
     QHBoxLayout, QLabel, QPushButton, QGraphicsDropShadowEffect, 
-    QTabWidget
+    QTabWidget, QMessageBox
 )
-from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve
+from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QThread, pyqtSignal
 from PyQt6.QtGui import QColor, QPalette, QFont, QCursor, QIcon
 import qtawesome as qta
 from post_downloader import PostDownloaderTab
@@ -13,6 +15,27 @@ from creator_downloader import CreatorDownloaderTab
 from kd_settings import SettingsTab
 from kd_help import HelpTab
 
+CURRENT_VERSION = "3.0.0"
+GITHUB_REPO = "VoxDroid/KemonoDownloader"
+
+class VersionChecker(QThread):
+    update_available = pyqtSignal(str, str)
+    error_occurred = pyqtSignal(str)
+
+    def run(self):
+        try:
+            url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+            response = requests.get(url, timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            latest_version = data["tag_name"].lstrip("v")
+            release_url = data["html_url"]
+            if version.parse(latest_version) > version.parse(CURRENT_VERSION):
+                self.update_available.emit(latest_version, release_url)
+        except requests.exceptions.ConnectionError:
+            self.error_occurred.emit("No internet connection. Update check failed.")
+        except requests.exceptions.RequestException as e:
+            self.error_occurred.emit(f"Failed to check for updates: {str(e)}")
 
 class IntroScreen(QWidget):
     def __init__(self, parent):
@@ -145,6 +168,10 @@ class KemonoDownloader(QMainWindow):
         self.setCentralWidget(self.intro_screen)
         self.apply_palette()
 
+        # Start version checking
+        if self.settings_tab.is_auto_check_updates_enabled():
+            self.check_for_updates()
+
     def apply_palette(self):
         palette = QPalette()
         palette.setColor(QPalette.ColorRole.Window, QColor("#1A2A44"))
@@ -219,7 +246,7 @@ class KemonoDownloader(QMainWindow):
         self.status_label.setStyleSheet("color: white; font-size: 12px;")
         footer_layout.addWidget(self.status_label)
         footer_layout.addStretch()
-        dev_label = QLabel("Developed by VoxDroid | GitHub: @VoxDroid")
+        dev_label = QLabel(f"Developed by VoxDroid | GitHub: @VoxDroid | Version: {CURRENT_VERSION}")
         dev_label.setStyleSheet("color: white; font-size: 12px;")
         footer_layout.addWidget(dev_label)
         main_layout.addWidget(footer)
@@ -249,6 +276,90 @@ class KemonoDownloader(QMainWindow):
         self.intro_fade.start()
         self.main_fade.start()
 
+    def check_for_updates(self):
+        self.version_checker = VersionChecker()
+        self.version_checker.update_available.connect(self.show_update_notification)
+        self.version_checker.error_occurred.connect(self.show_error_notification)
+        self.version_checker.start()
+
+    def show_update_notification(self, new_version, url):
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Update Available")
+        msg.setText(f"A new version ({new_version}) is available!")
+        msg.setInformativeText(
+            f"Current version: {CURRENT_VERSION}\n"
+            f'<a href="{url}" style="color: #A0C0FF; text-decoration: none;">Click here to visit the release page</a>'
+        )
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Ignore)
+        msg.setDefaultButton(QMessageBox.StandardButton.Ok)
+        msg.setTextFormat(Qt.TextFormat.RichText)
+        msg.setStyleSheet("""
+            QMessageBox {
+                background-color: #2A3B5A;
+                border: 1px solid #3A4B6A;
+                border-radius: 8px;
+            }
+            QMessageBox QLabel {
+                color: #FFFFFF;
+                font-size: 14px;
+                padding: 5px;
+            }
+            QPushButton {
+                background-color: #4A6B9A;
+                color: #FFFFFF;
+                border: none;
+                border-radius: 5px;
+                padding: 8px 20px;
+                font-size: 12px;
+                min-width: 80px;
+            }
+            QPushButton:hover {
+                background-color: #5A7BA9;
+            }
+            QPushButton:pressed {
+                background-color: #3A5B7A;
+            }
+        """)
+        reply = msg.exec()
+        if reply == QMessageBox.StandardButton.Ok:
+            import webbrowser
+            webbrowser.open(url)
+
+    def show_error_notification(self, error_message):
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Update Check Failed")
+        msg.setText("Unable to check for updates.")
+        msg.setInformativeText(error_message)
+        msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg.setStyleSheet("""
+            QMessageBox {
+                background-color: #2A3B5A;
+                border: 1px solid #3A4B6A;
+                border-radius: 8px;
+            }
+            QMessageBox QLabel {
+                color: #FFFFFF;
+                font-size: 14px;
+                padding: 5px;
+            }
+            QPushButton {
+                background-color: #4A6B9A;
+                color: #FFFFFF;
+                border: none;
+                border-radius: 5px;
+                padding: 8px 20px;
+                font-size: 12px;
+                min-width: 80px;
+            }
+            QPushButton:hover {
+                background-color: #5A7BA9;
+            }
+            QPushButton:pressed {
+                background-color: #3A5B7A;
+            }
+        """)
+        msg.exec()
+
     def animate_button(self, button, enter):
         anim = QPropertyAnimation(button, b"geometry")
         anim.setDuration(200)
@@ -259,7 +370,6 @@ class KemonoDownloader(QMainWindow):
         else:
             anim.setEndValue(rect.adjusted(3, 3, -3, -3))
         anim.start()
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
