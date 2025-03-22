@@ -2,3 +2,4 @@ pyqt6
 bs4
 qtawesome
 requests
+packaging
