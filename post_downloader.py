@@ -7,12 +7,15 @@ from bs4 import BeautifulSoup
 from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, 
                              QGroupBox, QGridLayout, QProgressBar, QTextEdit, QListWidget, 
                              QListWidgetItem, QAbstractItemView, QMessageBox, QCheckBox, 
-                             QLabel, QDialog)
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QColor, QPixmap
+                             QLabel, QDialog, QSlider, QComboBox, QApplication)
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QUrl, QSize, QTimer
+from PyQt6.QtGui import QColor, QPixmap, QMovie
 import qtawesome as qta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
+from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
+from PyQt6.QtMultimediaWidgets import QVideoWidget
+import subprocess
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36", "Referer": "https://kemono.su/"}
 API_BASE = "https://kemono.su/api/v1"
@@ -32,26 +35,39 @@ class PreviewThread(QThread):
         os.makedirs(self.cache_dir, exist_ok=True)
 
     def run(self):
-        if self.url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
-            cache_key = hashlib.md5(self.url.encode()).hexdigest() + os.path.splitext(self.url)[1]
-            cache_path = os.path.join(self.cache_dir, cache_key)
-            if os.path.exists(cache_path):
+        ext = os.path.splitext(self.url.lower())[1]
+        cache_key = hashlib.md5(self.url.encode()).hexdigest() + ext
+        cache_path = os.path.join(self.cache_dir, cache_key)
+        
+        # Check if the file is already cached
+        if os.path.exists(cache_path):
+            if ext in ['.jpg', '.jpeg', '.png']:
                 pixmap = QPixmap()
                 if pixmap.load(cache_path):
                     self.preview_ready.emit(self.url, pixmap)
                     return
+            elif ext == '.gif':
+                self.preview_ready.emit(self.url, cache_path)
+                return
+            else:  
+                self.preview_ready.emit(self.url, None)  
+                return
 
-            try:
-                response = requests.get(self.url, headers=HEADERS, stream=True)
-                response.raise_for_status()
-                self.total_size = int(response.headers.get('content-length', 0)) or 1
-                downloaded_data = bytearray()
+        try:
+            response = requests.get(self.url, headers=HEADERS, stream=True)
+            response.raise_for_status()
+            self.total_size = int(response.headers.get('content-length', 0)) or 1
+            downloaded_data = bytearray()
+            with open(cache_path, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         downloaded_data.extend(chunk)
+                        f.write(chunk)
                         self.downloaded_size += len(chunk)
                         progress = int((self.downloaded_size / self.total_size) * 100)
                         self.progress.emit(min(progress, 100))
+            
+            if ext in ['.jpg', '.jpeg', '.png']:
                 pixmap = QPixmap()
                 if not pixmap.loadFromData(downloaded_data):
                     self.error.emit(f"Failed to load image from {self.url}: Invalid or corrupted image data")
@@ -59,61 +75,384 @@ class PreviewThread(QThread):
                 scaled_pixmap = pixmap.scaled(800, 800, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
                 scaled_pixmap.save(cache_path)
                 self.preview_ready.emit(self.url, scaled_pixmap)
-            except requests.RequestException as e:
-                self.error.emit(f"Failed to download image from {self.url}: {str(e)}")
-            except Exception as e:
-                self.error.emit(f"Unexpected error while processing image from {self.url}: {str(e)}")
+            elif ext == '.gif':
+                self.preview_ready.emit(self.url, cache_path)
+            else: 
+                self.preview_ready.emit(self.url, None) 
+        except requests.RequestException as e:
+            self.error.emit(f"Failed to download file from {self.url}: {str(e)}")
+        except Exception as e:
+            self.error.emit(f"Unexpected error while processing file from {self.url}: {str(e)}")
 
 # Define ImageModal class
-class ImageModal(QDialog):
-    def __init__(self, image_url, cache_dir, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Image Viewer")
+class MediaPreviewModal(QDialog):
+    def __init__(self, media_url, cache_dir, tab_parent=None):
+        super().__init__(tab_parent)  
+        self.setWindowTitle("Media Preview")
         self.setModal(True)
-        self.resize(800, 800)
-        self.image_url = image_url
+        self.setMinimumSize(400, 300)
+        self.resize(800, 600)
+        self.media_url = media_url
         self.cache_dir = cache_dir
+        self.tab_parent = tab_parent  
+        self.player = None
+        self.movie = None  
+        self.display_mode = "Fit"
+        self.original_size = None
+        self.original_pixmap = None
+        self.is_muted = False
+        self.previous_volume = 50
         self.init_ui()
         self.start_preview()
 
     def init_ui(self):
-        layout = QVBoxLayout()
-        self.image_label = QLabel("Loading Image...")
-        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self.image_label)
+        self.layout = QVBoxLayout()
+        
+        self.content_widget = QWidget()
+        self.content_layout = QVBoxLayout(self.content_widget)
+        self.content_layout.setContentsMargins(0, 0, 0, 0)
+        self.content_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(self.content_widget, stretch=1)
+
+        # Progress bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setStyleSheet("QProgressBar { border: 1px solid #4A5B7A; border-radius: 5px; } QProgressBar::chunk { background: #4A5B7A; }")
-        layout.addWidget(self.progress_bar)
-        self.setLayout(layout)
+        self.progress_bar.setMaximumWidth(600)
+        self.progress_bar.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(self.progress_bar, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        # Display options dropdown
+        self.display_options_widget = QWidget()
+        self.display_options_layout = QHBoxLayout(self.display_options_widget)
+        self.display_options_layout.addStretch()
+        self.display_combo = QComboBox()
+        self.display_combo.addItems(["Fit", "Stretch", "Original", "Full Screen (Modal)"])
+        self.display_combo.setCurrentText("Fit")
+        self.display_combo.currentTextChanged.connect(self.change_display_mode)
+        self.display_combo.setStyleSheet("background: #4A5B7A; color: white; padding: 5px; border-radius: 5px;")
+        self.display_options_layout.addWidget(self.display_combo)
+        self.display_options_layout.addStretch()
+        self.layout.addWidget(self.display_options_widget)
+        self.display_options_widget.setVisible(False)
+
+        # Playback controls wrapped in a QWidget
+        self.controls_widget = QWidget()
+        self.controls_layout = QHBoxLayout(self.controls_widget)
+        self.controls_layout.setSpacing(10)
+
+        # Play/Pause toggle button
+        self.play_pause_button = QPushButton(qta.icon('fa5s.play', color='white'), "")
+        self.play_pause_button.clicked.connect(self.toggle_playback)
+        self.play_pause_button.setStyleSheet("background: #4A5B7A; padding: 5px; border-radius: 5px;")
+        self.play_pause_button.setFixedSize(40, 40)
+        self.controls_layout.addWidget(self.play_pause_button)
+
+        # Stop button
+        self.stop_button = QPushButton(qta.icon('fa5s.stop', color='white'), "")
+        self.stop_button.clicked.connect(self.stop_playback)
+        self.stop_button.setStyleSheet("background: #4A5B7A; padding: 5px; border-radius: 5px;")
+        self.stop_button.setFixedSize(40, 40)
+        self.controls_layout.addWidget(self.stop_button)
+
+        # Seek slider for video
+        self.seek_slider = QSlider(Qt.Orientation.Horizontal)
+        self.seek_slider.setRange(0, 0)
+        self.seek_slider.sliderMoved.connect(self.seek)
+        self.seek_slider.setStyleSheet(
+            "QSlider::groove:horizontal { border: 1px solid #4A5B7A; height: 8px; background: #2A3B5A; margin: 2px 0; }"
+            "QSlider::handle:horizontal { background: #4A5B7A; width: 18px; margin: -2px 0; border-radius: 9px; }"
+        )
+        self.seek_slider.setFixedWidth(300)
+        self.controls_layout.addWidget(self.seek_slider)
+
+        # Volume slider with clickable icon
+        self.volume_layout = QHBoxLayout()
+        self.volume_icon = QLabel()
+        self.volume_icon.setPixmap(qta.icon('fa5s.volume-up', color='white').pixmap(20, 20))
+        self.volume_icon.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.volume_icon.mousePressEvent = self.toggle_mute
+        self.volume_layout.addWidget(self.volume_icon)
+        self.volume_slider = QSlider(Qt.Orientation.Horizontal)
+        self.volume_slider.setRange(0, 100)
+        self.volume_slider.setValue(50)
+        self.volume_slider.valueChanged.connect(self.set_volume)
+        self.volume_slider.setStyleSheet(
+            "QSlider::groove:horizontal { border: 1px solid #5A6B8A; height: 6px; background: #3A4B6A; margin: 2px 0; border-radius: 3px; }"
+            "QSlider::handle:horizontal { background: #6A7B9A; width: 16px; height: 16px; margin: -5px 0; border-radius: 8px; border: 1px solid #FFFFFF; }"
+            "QSlider::sub-page:horizontal { background: #4A5B7A; border-radius: 3px; }"
+        )
+        self.volume_slider.setFixedWidth(100)
+        self.volume_layout.addWidget(self.volume_slider)
+        self.controls_layout.addLayout(self.volume_layout)
+
+        self.controls_layout.addStretch()
+        self.layout.addWidget(self.controls_widget, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.controls_widget.setVisible(False)
+
+        self.setLayout(self.layout)
 
     def start_preview(self):
-        self.preview_thread = PreviewThread(self.image_url, self.cache_dir)
-        self.preview_thread.preview_ready.connect(self.display_image)
-        self.preview_thread.progress.connect(self.update_progress)
-        self.preview_thread.error.connect(self.display_error)
-        self.preview_thread.start()
+        ext = os.path.splitext(self.media_url.lower())[1]
+
+        if ext in ['.jpg', '.jpeg', '.png', '.gif']:
+            self.preview_thread = PreviewThread(self.media_url, self.cache_dir)
+            self.preview_thread.preview_ready.connect(self.display_image)
+            self.preview_thread.progress.connect(self.update_progress)
+            self.preview_thread.error.connect(self.display_error)
+            self.preview_thread.start()
+        elif ext in ['.mp4', '.mov', '.mp3', '.wav']:
+            self.setup_media_player()
+            self.preview_thread = PreviewThread(self.media_url, self.cache_dir)
+            self.preview_thread.preview_ready.connect(self.play_media)
+            self.preview_thread.progress.connect(self.update_progress)
+            self.preview_thread.error.connect(self.display_error)
+            self.preview_thread.start()
+        else:
+            if self.tab_parent:
+                self.tab_parent.append_log_to_console(f"[WARNING] Preview not supported for file type: {ext} ({self.media_url})", "WARNING")
+            self.close()
+
+    def setup_media_player(self):
+        self.player = QMediaPlayer()
+        self.audio_output = QAudioOutput()
+        self.player.setAudioOutput(self.audio_output)
+        self.audio_output.setVolume(0.5)
+        ext = os.path.splitext(self.media_url.lower())[1]
+        if ext in ['.mp4', '.mov']:
+            self.video_widget = QVideoWidget()
+            self.player.setVideoOutput(self.video_widget)
+        else:
+            self.content_label = QLabel("Audio Playback")
+            self.content_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.content_layout.addWidget(self.content_label)
+        self.player.durationChanged.connect(self.update_duration)
+        self.player.positionChanged.connect(self.update_position)
+        self.player.mediaStatusChanged.connect(self.media_status_changed)
 
     def update_progress(self, value):
         self.progress_bar.setValue(value)
-        self.image_label.setText(f"Loading Image... ({value}%)")
+        if self.progress_bar.value() < 100:
+            while self.content_layout.count():
+                item = self.content_layout.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+            loading_label = QLabel(f"Loading... ({value}%)")
+            loading_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.content_layout.addWidget(loading_label)
 
-    def display_image(self, url, pixmap):
-        self.image_label.setText("")
+    def display_image(self, url, media):
         self.progress_bar.hide()
-        self.image_label.setPixmap(pixmap)
+        while self.content_layout.count():
+            item = self.content_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        self.content_label = QLabel()
+        self.content_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        ext = os.path.splitext(url.lower())[1]
+        if ext == '.gif':
+            self.movie = QMovie(media)
+            if not self.movie.isValid():
+                self.display_error(f"Failed to load GIF from {url}: Invalid or corrupted GIF data")
+                return
+            self.content_label.setMovie(self.movie)
+            self.movie.jumpToFrame(0)
+            self.original_size = self.movie.currentPixmap().size()
+            if self.original_size.isEmpty() or self.original_size.height() == 0:
+                self.original_size = QSize(400, 300)  
+            self.movie.start()
+        else:
+            self.original_pixmap = QPixmap(media)
+            self.original_size = self.original_pixmap.size()
+            if self.original_size.isEmpty() or self.original_size.height() == 0:
+                self.original_size = QSize(400, 300)  
+            self.content_label.setPixmap(self.original_pixmap)
+
+        self.content_layout.addWidget(self.content_label)
+        self.apply_display_mode()
+        self.adjust_dialog_size()
+        self.controls_widget.setVisible(False)
+        self.display_options_widget.setVisible(True)
+
+    def play_media(self, url, _):
+        while self.content_layout.count():
+            item = self.content_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        ext = os.path.splitext(self.media_url.lower())[1]
+        if ext in ['.mp4', '.mov']:
+            self.content_layout.addWidget(self.video_widget)
+            QTimer.singleShot(100, self.get_video_size)
+        cache_key = hashlib.md5(self.media_url.encode()).hexdigest() + os.path.splitext(self.media_url)[1]
+        cache_path = os.path.join(self.cache_dir, cache_key)
+        self.progress_bar.hide()
+        self.player.setSource(QUrl.fromLocalFile(cache_path))
+        self.controls_widget.setVisible(True)
+        self.display_options_widget.setVisible(True)
+
+    def get_video_size(self):
+        if hasattr(self, 'video_widget'):
+            size = self.video_widget.sizeHint()
+            if size.isValid():
+                self.original_size = size
+            else:
+                self.original_size = QSize(640, 480)
+            self.apply_display_mode()
+            self.adjust_dialog_size()
 
     def display_error(self, error_message):
-        self.image_label.setText("Error loading image")
+        while self.content_layout.count():
+            item = self.content_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        self.content_label = QLabel("Error loading media")
+        self.content_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.content_layout.addWidget(self.content_label)
         self.progress_bar.hide()
-        QMessageBox.critical(self, "Image Load Error", error_message)
+        QMessageBox.critical(self, "Media Load Error", error_message)
+
+    def change_display_mode(self, mode):
+        self.display_mode = mode
+        self.apply_display_mode()
+        self.adjust_dialog_size()
+
+    def apply_display_mode(self):
+        if self.display_mode == "Fit":
+            if hasattr(self, 'content_label') and self.original_size:
+                if hasattr(self, 'movie') and self.movie:
+                    scaled_size = self.original_size.scaled(self.content_widget.size(), Qt.AspectRatioMode.KeepAspectRatio)
+                    self.movie.setScaledSize(scaled_size)
+                    if not self.movie.isValid() or self.movie.state() != QMovie.MovieState.Running:
+                        self.movie.start()
+                elif hasattr(self, 'original_pixmap') and self.original_pixmap:
+                    scaled_pixmap = self.original_pixmap.scaled(self.content_widget.size(), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                    self.content_label.setPixmap(scaled_pixmap)
+            elif hasattr(self, 'video_widget'):
+                self.video_widget.setMinimumSize(0, 0)
+                self.video_widget.setMaximumSize(self.content_widget.size())
+        elif self.display_mode == "Stretch":
+            if hasattr(self, 'content_label') and self.original_size:
+                if hasattr(self, 'movie') and self.movie:
+                    self.movie.setScaledSize(self.content_widget.size())
+                    if not self.movie.isValid() or self.movie.state() != QMovie.MovieState.Running:
+                        self.movie.start()
+                elif hasattr(self, 'original_pixmap') and self.original_pixmap:
+                    scaled_pixmap = self.original_pixmap.scaled(self.content_widget.size(), Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                    self.content_label.setPixmap(scaled_pixmap)
+            elif hasattr(self, 'video_widget'):
+                self.video_widget.setMinimumSize(self.content_widget.size())
+                self.video_widget.setMaximumSize(self.content_widget.size())
+        elif self.display_mode == "Original":
+            if hasattr(self, 'content_label') and self.original_size:
+                if hasattr(self, 'movie') and self.movie:
+                    self.movie.setScaledSize(self.original_size)
+                    if not self.movie.isValid() or self.movie.state() != QMovie.MovieState.Running:
+                        self.movie.start()
+                elif hasattr(self, 'original_pixmap') and self.original_pixmap:
+                    self.content_label.setPixmap(self.original_pixmap)
+            elif hasattr(self, 'video_widget') and self.original_size:
+                self.video_widget.setMinimumSize(0, 0)
+                self.video_widget.setMaximumSize(self.original_size)
+        elif self.display_mode == "Full Screen (Modal)":
+            if hasattr(self, 'content_label') and self.original_size:
+                if self.original_size.isEmpty() or self.original_size.height() == 0:
+                    self.original_size = QSize(400, 300) 
+                aspect_ratio = self.original_size.width() / self.original_size.height()
+                screen_size = QApplication.primaryScreen().availableSize()
+                max_width = min(screen_size.width() - 40, self.original_size.width())
+                max_height = min(screen_size.height() - 150, self.original_size.height())
+                if max_width / aspect_ratio <= max_height:
+                    new_width = max_width
+                    new_height = int(max_width / aspect_ratio)
+                else:
+                    new_height = max_height
+                    new_width = int(max_height * aspect_ratio)
+                self.resize(new_width + 40, new_height + 150)
+                if hasattr(self, 'movie') and self.movie:
+                    self.movie.setScaledSize(self.content_widget.size())
+                    if not self.movie.isValid() or self.movie.state() != QMovie.MovieState.Running:
+                        self.movie.start()
+                elif hasattr(self, 'original_pixmap') and self.original_pixmap:
+                    scaled_pixmap = self.original_pixmap.scaled(self.content_widget.size(), Qt.AspectRatioMode.KeepAspectRatioByExpanding, Qt.TransformationMode.SmoothTransformation)
+                    self.content_label.setPixmap(scaled_pixmap)
+            elif hasattr(self, 'video_widget'):
+                self.video_widget.setMinimumSize(self.content_widget.size())
+                self.video_widget.setMaximumSize(self.content_widget.size())
+
+    def adjust_dialog_size(self):
+        if self.display_mode == "Original" and self.original_size:
+            content_size = self.original_size
+            extra_height = self.progress_bar.sizeHint().height() + self.display_options_widget.sizeHint().height() + self.controls_widget.sizeHint().height() + 50
+            new_width = min(content_size.width() + 40, QApplication.primaryScreen().availableSize().width())
+            new_height = min(content_size.height() + extra_height, QApplication.primaryScreen().availableSize().height())
+            self.resize(new_width, new_height)
+        elif self.display_mode != "Full Screen (Modal)":
+            self.resize(800, 600)
+
+    def toggle_playback(self):
+        if self.player:
+            if self.player.playbackState() == QMediaPlayer.PlaybackState.PlayingState:
+                self.player.pause()
+                self.play_pause_button.setIcon(qta.icon('fa5s.play', color='white'))
+            else:
+                self.player.play()
+                self.play_pause_button.setIcon(qta.icon('fa5s.pause', color='white'))
+
+    def stop_playback(self):
+        if self.player:
+            self.player.stop()
+            self.play_pause_button.setIcon(qta.icon('fa5s.play', color='white'))
+
+    def seek(self, position):
+        if self.player:
+            self.player.setPosition(position)
+
+    def toggle_mute(self, event):
+        if self.player and self.audio_output:
+            if self.is_muted:
+                self.audio_output.setVolume(self.previous_volume / 100.0)
+                self.volume_slider.setValue(self.previous_volume)
+                self.is_muted = False
+            else:
+                self.previous_volume = self.volume_slider.value()
+                self.audio_output.setVolume(0)
+                self.volume_slider.setValue(0)
+                self.is_muted = True
+
+    def set_volume(self, value):
+        if self.player and self.audio_output:
+            self.audio_output.setVolume(value / 100.0)
+            self.is_muted = (value == 0)
+            if value == 0:
+                self.volume_icon.setPixmap(qta.icon('fa5s.volume-mute', color='white').pixmap(20, 20))
+            elif value < 50:
+                self.volume_icon.setPixmap(qta.icon('fa5s.volume-down', color='white').pixmap(20, 20))
+            else:
+                self.volume_icon.setPixmap(qta.icon('fa5s.volume-up', color='white').pixmap(20, 20))
+
+    def update_duration(self, duration):
+        self.seek_slider.setRange(0, duration)
+
+    def update_position(self, position):
+        self.seek_slider.blockSignals(True)
+        self.seek_slider.setValue(position)
+        self.seek_slider.blockSignals(False)
+
+    def media_status_changed(self, status):
+        if status == QMediaPlayer.MediaStatus.EndOfMedia:
+            self.play_pause_button.setIcon(qta.icon('fa5s.play', color='white'))
 
     def resizeEvent(self, event):
-        if self.image_label.pixmap() and not self.image_label.pixmap().isNull():
-            pixmap = self.image_label.pixmap()
-            scaled_pixmap = pixmap.scaled(self.image_label.size(), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-            self.image_label.setPixmap(scaled_pixmap)
+        self.apply_display_mode()
         super().resizeEvent(event)
 
+    def closeEvent(self, event):
+        if self.player:
+            self.player.stop()
+        if self.movie:
+            self.movie.stop()
+        super().closeEvent(event)
+        
 # Define PostDetectionThread class
 class PostDetectionThread(QThread):
     finished = pyqtSignal(list)
@@ -1408,11 +1747,21 @@ class PostDownloaderTab(QWidget):
 
     def view_current_item(self):
         if self.current_preview_url:
-            if self.current_preview_url.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
-                modal = ImageModal(self.current_preview_url, self.cache_dir, self)
-                modal.exec()
-            else:
-                self.append_log_to_console(f"[WARNING] Viewing not supported for {self.current_preview_url}", "WARNING")
+            ext = os.path.splitext(self.current_preview_url.lower())[1]
+            unsupported_extensions = ['.zip', '.psd', '.docx', '.7z', '.rar']
+            supported_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.mp4', '.mov', '.mp3', '.wav']
+
+            if ext in unsupported_extensions:
+                self.append_log_to_console(f"[WARNING] Preview not supported for file type: {ext} ({self.current_preview_url})", "WARNING")
+                return
+            elif ext not in supported_extensions:
+                self.append_log_to_console(f"[WARNING] Preview not supported for file type: {ext} ({self.current_preview_url})", "WARNING")
+                return
+
+            modal = MediaPreviewModal(self.current_preview_url, self.cache_dir, self)
+            modal.exec()
+        else:
+            self.append_log_to_console("[WARNING] No item selected for preview.", "WARNING")
 
     def handle_item_click(self, item):
         if item:

@@ -15,7 +15,7 @@ from creator_downloader import CreatorDownloaderTab
 from kd_settings import SettingsTab
 from kd_help import HelpTab
 
-CURRENT_VERSION = "3.0.0"
+CURRENT_VERSION = "3.1.0"
 GITHUB_REPO = "VoxDroid/KemonoDownloader"
 
 class VersionChecker(QThread):
