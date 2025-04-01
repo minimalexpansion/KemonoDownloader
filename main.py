@@ -14,8 +14,9 @@ from post_downloader import PostDownloaderTab
 from creator_downloader import CreatorDownloaderTab
 from kd_settings import SettingsTab
 from kd_help import HelpTab
+from kd_language import translate, language_manager
 
-CURRENT_VERSION = "3.1.0"
+CURRENT_VERSION = "3.2.0"
 GITHUB_REPO = "VoxDroid/KemonoDownloader"
 
 class VersionChecker(QThread):
@@ -33,9 +34,9 @@ class VersionChecker(QThread):
             if version.parse(latest_version) > version.parse(CURRENT_VERSION):
                 self.update_available.emit(latest_version, release_url)
         except requests.exceptions.ConnectionError:
-            self.error_occurred.emit("No internet connection. Update check failed.")
+            self.error_occurred.emit(translate("no_internet_connection"))
         except requests.exceptions.RequestException as e:
-            self.error_occurred.emit(f"Failed to check for updates: {str(e)}")
+            self.error_occurred.emit(f"{translate('failed_to_check_updates')}: {str(e)}")
 
 class IntroScreen(QWidget):
     def __init__(self, parent):
@@ -43,6 +44,7 @@ class IntroScreen(QWidget):
         self.parent = parent
         self.setup_ui()
         self.start_fade_in()
+        self.parent.settings_tab.language_changed.connect(self.update_ui_text)
 
     def setup_ui(self):
         self.setStyleSheet("background-color: #1A2A44; border: none;")
@@ -52,7 +54,7 @@ class IntroScreen(QWidget):
         main_layout.setContentsMargins(40, 40, 40, 40)
 
         # Title
-        self.title = QLabel("Kemono.su Downloader")
+        self.title = QLabel(translate("app_title"))
         self.title.setFont(QFont("Poppins", 42, QFont.Weight.Bold))
         self.title.setStyleSheet("""
             color: #FFFFFF;
@@ -81,7 +83,7 @@ class IntroScreen(QWidget):
         info_shadow.setColor(QColor(0, 0, 0, 80))
         info_widget.setGraphicsEffect(info_shadow)
 
-        self.dev_label = QLabel("Developed by VoxDroid")
+        self.dev_label = QLabel(translate("developed_by"))
         self.dev_label.setFont(QFont("Poppins", 16))
         self.dev_label.setStyleSheet("color: #FFFFFF;")
         self.dev_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -101,7 +103,7 @@ class IntroScreen(QWidget):
         main_layout.addSpacing(40)
 
         # Launch Button
-        self.launch_button = QPushButton("Launch Application")
+        self.launch_button = QPushButton(translate("launch_button"))
         self.launch_button.setFont(QFont("Poppins", 16, QFont.Weight.Medium))
         self.launch_button.setFixedSize(220, 60)
         self.launch_button.setStyleSheet("""
@@ -128,6 +130,11 @@ class IntroScreen(QWidget):
 
         main_layout.addStretch()
 
+    def update_ui_text(self):
+        self.title.setText(translate("app_title"))
+        self.dev_label.setText(translate("developed_by"))
+        self.launch_button.setText(translate("launch_button"))
+
     def start_fade_in(self):
         self.setWindowOpacity(0)
         fade_in = QPropertyAnimation(self, b"windowOpacity")
@@ -146,10 +153,9 @@ def resource_path(relative_path):
 class KemonoDownloader(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Kemono Downloader")
+        self.setWindowTitle(translate("app_title"))
         self.setGeometry(100, 100, 1000, 700)
 
-        # Initialize settings and folder structure
         self.settings_tab = SettingsTab(self)
         self.base_folder = os.path.join(
             self.settings_tab.settings["base_directory"], 
@@ -162,13 +168,13 @@ class KemonoDownloader(QMainWindow):
 
         self.setWindowIcon(QIcon(resource_path("KemonoDownloader.ico")))
 
-        # Set up UI
         self.intro_screen = IntroScreen(self)
         self.main_widget = None
         self.setCentralWidget(self.intro_screen)
         self.apply_palette()
+        
+        self.settings_tab.language_changed.connect(self.update_all_ui)
 
-        # Start version checking
         if self.settings_tab.is_auto_check_updates_enabled():
             self.check_for_updates()
 
@@ -228,30 +234,52 @@ class KemonoDownloader(QMainWindow):
 
         # Add Tabs
         self.post_tab = PostDownloaderTab(self)
-        self.tabs.addTab(self.post_tab, qta.icon('fa5s.download', color='white'), "Post Downloader")
+        self.tabs.addTab(self.post_tab, qta.icon('fa5s.download', color='white'), translate("post_downloader_tab"))
 
         self.creator_tab = CreatorDownloaderTab(self)
-        self.tabs.addTab(self.creator_tab, qta.icon('fa5s.user-edit', color='white'), "Creator Downloader")
+        self.tabs.addTab(self.creator_tab, qta.icon('fa5s.user-edit', color='white'), translate("creator_downloader_tab"))
 
-        self.tabs.addTab(self.settings_tab, qta.icon('fa5s.cog', color='white'), "Settings")
+        self.tabs.addTab(self.settings_tab, qta.icon('fa5s.cog', color='white'), translate("settings_tab"))
 
         self.help_tab = HelpTab(self)
-        self.tabs.addTab(self.help_tab, qta.icon('fa5s.question-circle', color='white'), "Help")
+        self.tabs.addTab(self.help_tab, qta.icon('fa5s.question-circle', color='white'), translate("help_tab"))
 
         # Footer
         footer = QWidget()
         footer_layout = QHBoxLayout(footer)
         footer_layout.setContentsMargins(10, 5, 10, 5)
-        self.status_label = QLabel("Idle")
+        self.status_label = QLabel(translate("idle"))
         self.status_label.setStyleSheet("color: white; font-size: 12px;")
         footer_layout.addWidget(self.status_label)
         footer_layout.addStretch()
-        dev_label = QLabel(f"Developed by VoxDroid | GitHub: @VoxDroid | Version: {CURRENT_VERSION}")
-        dev_label.setStyleSheet("color: white; font-size: 12px;")
-        footer_layout.addWidget(dev_label)
+        self.dev_label = QLabel(f"{translate('developed_by')} | GitHub: @VoxDroid | {translate('current_version', CURRENT_VERSION)}")
+        self.dev_label.setStyleSheet("color: white; font-size: 12px;")
+        footer_layout.addWidget(self.dev_label)
         main_layout.addWidget(footer)
 
         return main_widget
+
+    def update_all_ui(self):
+        self.setWindowTitle(translate("app_title"))
+        
+        if self.centralWidget() == self.intro_screen:
+            self.intro_screen.update_ui_text()
+        
+        if self.main_widget:
+            self.tabs.setTabText(0, translate("post_downloader_tab"))
+            self.tabs.setTabText(1, translate("creator_downloader_tab"))
+            self.tabs.setTabText(2, translate("settings_tab"))
+            self.tabs.setTabText(3, translate("help_tab"))
+            
+            if self.status_label.text() == "Idle" or self.status_label.text() == "アイドル" or self.status_label.text() == "대기 중":
+                self.status_label.setText(translate("idle"))
+            
+            self.dev_label.setText(f"{translate('developed_by')} | GitHub: @VoxDroid | {translate('current_version', CURRENT_VERSION)}")
+            
+            self.post_tab.refresh_ui()  
+            self.creator_tab.refresh_ui() 
+            self.settings_tab.update_ui_text()
+            self.help_tab.update_ui_text()
 
     def transition_to_main(self):
         self.main_widget = self.setup_main_ui()
@@ -284,11 +312,11 @@ class KemonoDownloader(QMainWindow):
 
     def show_update_notification(self, new_version, url):
         msg = QMessageBox(self)
-        msg.setWindowTitle("Update Available")
-        msg.setText(f"A new version ({new_version}) is available!")
+        msg.setWindowTitle(translate("update_available"))
+        msg.setText(translate("update_available_message", new_version))
         msg.setInformativeText(
-            f"Current version: {CURRENT_VERSION}\n"
-            f'<a href="{url}" style="color: #A0C0FF; text-decoration: none;">Click here to visit the release page</a>'
+            f"{translate('current_version', CURRENT_VERSION)}\n"
+            f'<a href="{url}" style="color: #A0C0FF; text-decoration: none;">{translate("click_release_page")}</a>'
         )
         msg.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Ignore)
         msg.setDefaultButton(QMessageBox.StandardButton.Ok)
@@ -327,8 +355,8 @@ class KemonoDownloader(QMainWindow):
 
     def show_error_notification(self, error_message):
         msg = QMessageBox(self)
-        msg.setWindowTitle("Update Check Failed")
-        msg.setText("Unable to check for updates.")
+        msg.setWindowTitle(translate("update_check_failed"))
+        msg.setText(translate("unable_check_updates"))
         msg.setInformativeText(error_message)
         msg.setStandardButtons(QMessageBox.StandardButton.Ok)
         msg.setStyleSheet("""
@@ -370,6 +398,10 @@ class KemonoDownloader(QMainWindow):
         else:
             anim.setEndValue(rect.adjusted(3, 3, -3, -3))
         anim.start()
+        
+    def log(self, message):
+        self.status_label.setText(message)
+        print(message)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
