@@ -138,9 +138,29 @@ class PostDetectionThread(QThread):
             try:
                 response = requests.get(api_url, headers=HEADERS, timeout=10)
                 if response.status_code != 200:
-                    self.log.emit(translate("log_error", f"Failed to fetch creator posts at offset {offset} - Status code: {response.status_code}"), "ERROR")
-                    break
-                
+                    self.log.emit(translate("log_info", translate("first_validation_failed", api_url)), "INFO")
+                    # Fallback validation
+                    self.log.emit(translate("log_info", translate("attempting_fallback_validation", api_url)), "INFO")
+                    fallback_headers = {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                        'Accept-Language': 'en-US,en;q=0.5',
+                        'Connection': 'keep-alive',
+                        'Upgrade-Insecure-Requests': '1',
+                        'Cache-Control': 'max-age=0'
+                    }
+                    try:
+                        direct_response = requests.get(self.url, headers=fallback_headers, timeout=10)
+                        if direct_response.status_code == 200 and 'kemono' in direct_response.text.lower():
+                            self.log.emit(translate("log_info", translate("url_validated_fallback", self.url)), "INFO")
+                            break 
+                        else:
+                            self.log.emit(translate("log_error", f"Fallback validation failed for {self.url} - Status code: {direct_response.status_code}"), "ERROR")
+                            break
+                    except requests.RequestException as fallback_e:
+                        self.log.emit(translate("log_error", translate("fallback_validation_failed", str(fallback_e))), "ERROR")
+                        break
+                    
                 posts_data = response.json()
                 if not isinstance(posts_data, list):
                     self.log.emit(translate("log_error", "Invalid posts data returned! Response: " + json.dumps(posts_data, indent=2)), "ERROR")
@@ -162,8 +182,28 @@ class PostDetectionThread(QThread):
                 time.sleep(0.5)
 
             except requests.RequestException as e:
-                self.log.emit(translate("log_error", f"Failed to fetch posts at offset {offset}: {str(e)}"), "ERROR")
-                break
+                self.log.emit(translate("log_info", translate("first_validation_failed_exception", api_url)), "INFO")
+                # Fallback validation on exception
+                self.log.emit(translate("log_info", translate("attempting_fallback_validation", api_url)), "INFO")
+                fallback_headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1',
+                    'Cache-Control': 'max-age=0'
+                }
+                try:
+                    direct_response = requests.get(self.url, headers=fallback_headers, timeout=10)
+                    if direct_response.status_code == 200 and 'kemono' in direct_response.text.lower():
+                        self.log.emit(translate("log_info", translate("url_validated_fallback", self.url)), "INFO")
+                        break  
+                    else:
+                        self.log.emit(translate("log_error", f"Fallback validation failed for {self.url} - Status code: {direct_response.status_code}"), "ERROR")
+                        break
+                except requests.RequestException as fallback_e:
+                    self.log.emit(translate("log_error", translate("fallback_validation_failed", str(fallback_e))), "ERROR")
+                    break
 
         if self.is_running:
             detected_posts = []

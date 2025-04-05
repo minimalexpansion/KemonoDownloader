@@ -16,7 +16,7 @@ from kd_settings import SettingsTab
 from kd_help import HelpTab
 from kd_language import translate, language_manager
 
-CURRENT_VERSION = "3.2.0"
+CURRENT_VERSION = "3.3.0"
 GITHUB_REPO = "VoxDroid/KemonoDownloader"
 
 class VersionChecker(QThread):

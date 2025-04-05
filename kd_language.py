@@ -8,6 +8,61 @@ class KDLanguage:
     def __init__(self):
         self.current_language = "english"  # Default language
         self.translations = {
+            
+            # For post_downloader.py fallback validation
+            "first_validation_failed": {
+                "english": "First validation method failed for {0}, trying fallback method...",
+                "japanese": "最初の検証方法が {0} で失敗しました、フォールバック方法を試しています...",
+                "korean": "첫 번째 검증 방법이 {0}에 대해 실패했습니다, 대체 방법을 시도 중..."
+            },
+            "first_validation_failed_exception": {
+                "english": "First validation method failed with exception for {0}, trying fallback method...",
+                "japanese": "最初の検証方法が {0} で例外で失敗しました、フォールバック方法を試しています...",
+                "korean": "첫 번째 검증 방법이 {0}에 대해 예외로 실패했습니다, 대체 방법을 시도 중..."
+            },
+            "attempting_fallback_validation": {
+                "english": "Attempting fallback validation for {0}",
+                "japanese": "{0} のフォールバック検証を試みています",
+                "korean": "{0}에 대한 대체 검증 시도 중"
+            },
+            "url_validated_fallback": {
+                "english": "URL validated using fallback method: {0}",
+                "japanese": "フォールバック方法を使用してURLが検証されました: {0}",
+                "korean": "대체 방법을 사용하여 URL이 검증됨: {0}"
+            },
+            "fallback_validation_failed": {
+                "english": "Fallback validation failed with exception: {0}",
+                "japanese": "フォールバック検証が例外で失敗しました: {0}",
+                "korean": "대체 검증이 예외로 실패했습니다: {0}"
+            },
+
+            # For creator_downloader.py fallback validation
+            "first_validation_failed": {
+                "english": "First validation method failed for {0}, trying fallback method...",
+                "japanese": "最初の検証方法が {0} で失敗しました、フォールバック方法を試しています...",
+                "korean": "첫 번째 검증 방법이 {0}에 대해 실패했습니다, 대체 방법을 시도 중..."
+            },
+            "first_validation_failed_exception": {
+                "english": "First validation method failed with exception for {0}, trying fallback method...",
+                "japanese": "最初の検証方法が {0} で例外で失敗しました、フォールバック方法を試しています...",
+                "korean": "첫 번째 검증 방법이 {0}에 대해 예외로 실패했습니다, 대체 방법을 시도 중..."
+            },
+            "attempting_fallback_validation": {
+                "english": "Attempting fallback validation for {0}",
+                "japanese": "{0} のフォールバック検証を試みています",
+                "korean": "{0}에 대한 대체 검증 시도 중"
+            },
+            "url_validated_fallback": {
+                "english": "URL validated using fallback method: {0}",
+                "japanese": "フォールバック方法を使用してURLが検証されました: {0}",
+                "korean": "대체 방법을 사용하여 URL이 검증됨: {0}"
+            },
+            "fallback_validation_failed": {
+                "english": "Fallback validation failed with exception: {0}",
+                "japanese": "フォールバック検証が例外で失敗しました: {0}",
+                "korean": "대체 검증이 예외로 실패했습니다: {0}"
+            },
+            
             # Main window and common elements
             "app_title": {
                 "english": "Kemono Downloader",

@@ -1114,11 +1114,40 @@ class PostDownloaderTab(QWidget):
             return False
         service, creator_id, post_id = parts[-5], parts[-3], parts[-1]
         api_url = f"{API_BASE}/{service}/user/{creator_id}/post/{post_id}"
+        
         try:
             response = requests.get(api_url, headers=HEADERS, timeout=5)
-            return response.status_code == 200
+            if response.status_code == 200:
+                return True
+            
+            self.append_log_to_console(translate("log_info", translate("first_validation_failed", url)), "INFO")
         except requests.RequestException:
-            return False
+            self.append_log_to_console(translate("log_info", translate("first_validation_failed_exception", url)), "INFO")
+        
+        try:
+            self.append_log_to_console(translate("log_info", translate("attempting_fallback_validation", url)), "INFO")
+            
+            fallback_headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Cache-Control': 'max-age=0'
+            }
+            
+            direct_response = requests.get(url, headers=fallback_headers, timeout=10)
+            
+            if direct_response.status_code == 200:
+                content = direct_response.text.lower()
+                if 'kemono' in content:
+                    self.append_log_to_console(translate("log_info", translate("url_validated_fallback", url)), "INFO")
+                    return True
+            
+        except requests.RequestException as e:
+            self.append_log_to_console(translate("log_error", translate("fallback_validation_failed", str(e))), "ERROR")
+            
+        return False
 
     def create_view_handler(self, url, checked):
         def handler():
