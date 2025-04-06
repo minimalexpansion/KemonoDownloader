@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QLabel
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
-from kd_language import translate 
+from kemonodownloader.kd_language import translate 
 
 class HelpTab(QWidget):
     def __init__(self, parent):

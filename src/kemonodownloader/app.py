@@ -10,13 +10,13 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QThread, pyqtSignal
 from PyQt6.QtGui import QColor, QPalette, QFont, QCursor, QIcon
 import qtawesome as qta
-from post_downloader import PostDownloaderTab
-from creator_downloader import CreatorDownloaderTab
-from kd_settings import SettingsTab
-from kd_help import HelpTab
-from kd_language import translate, language_manager
+from kemonodownloader.post_downloader import PostDownloaderTab
+from kemonodownloader.creator_downloader import CreatorDownloaderTab
+from kemonodownloader.kd_settings import SettingsTab
+from kemonodownloader.kd_help import HelpTab
+from kemonodownloader.kd_language import translate, language_manager
 
-CURRENT_VERSION = "3.3.0"
+CURRENT_VERSION = "3.4.0"
 GITHUB_REPO = "VoxDroid/KemonoDownloader"
 
 class VersionChecker(QThread):
@@ -166,7 +166,7 @@ class KemonoDownloader(QMainWindow):
         self.other_files_folder = os.path.join(self.base_folder, "Other Files")
         self.ensure_folders_exist()
 
-        self.setWindowIcon(QIcon(resource_path("KemonoDownloader.ico")))
+        self.setWindowIcon(QIcon(resource_path("KemonoDownloader.png")))
 
         self.intro_screen = IntroScreen(self)
         self.main_widget = None
@@ -403,9 +403,12 @@ class KemonoDownloader(QMainWindow):
         self.status_label.setText(message)
         print(message)
 
-if __name__ == "__main__":
+def main():
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
     window = KemonoDownloader()
     window.show()
     sys.exit(app.exec())
+
+if __name__ == "__main__":
+    main()

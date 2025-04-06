@@ -1,11 +1,12 @@
 import os
+import sys
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, 
     QGroupBox, QGridLayout, QLabel, QSlider, QSpinBox, 
     QFileDialog, QMessageBox, QCheckBox, QComboBox
 )
 from PyQt6.QtCore import Qt, QSettings, pyqtSignal
-from kd_language import language_manager, translate
+from kemonodownloader.kd_language import language_manager, translate
 
 class SettingsTab(QWidget):
     settings_applied = pyqtSignal()
@@ -17,7 +18,7 @@ class SettingsTab(QWidget):
         self.qsettings = QSettings("VoxDroid", "KemonoDownloader")
         self.default_settings = {
             "base_folder_name": "Kemono Downloader",
-            "base_directory": os.getcwd(),
+            "base_directory": self.get_default_base_directory(),
             "simultaneous_downloads": 5,
             "auto_check_updates": True,
             "language": "english"
@@ -29,6 +30,15 @@ class SettingsTab(QWidget):
         
         self.setup_ui()
 
+    def get_default_base_directory(self):
+        """Return a platform-appropriate default directory for app data."""
+        if sys.platform == "win32":  # Windows
+            return os.path.join(os.getenv("APPDATA", os.path.expanduser("~")), "Kemono Downloader")
+        elif sys.platform == "darwin":  # macOS
+            return os.path.expanduser("~/Library/Application Support/Kemono Downloader")
+        else:  # Linux and others
+            return os.path.join(os.getenv("XDG_DATA_HOME", os.path.expanduser("~/.local/share")), "Kemono Downloader")
+        
     def load_settings(self):
         settings_dict = {}
         settings_dict["base_folder_name"] = self.qsettings.value("base_folder_name", self.default_settings["base_folder_name"], type=str)
@@ -136,11 +146,20 @@ class SettingsTab(QWidget):
         self.language_group.setLayout(language_layout)
         layout.addWidget(self.language_group)
 
+        # Buttons Layout
+        buttons_layout = QHBoxLayout()
+        
         self.apply_button = QPushButton()
         self.apply_button.setStyleSheet("background: #4A5B7A; padding: 8px; border-radius: 5px;")
         self.apply_button.clicked.connect(self.confirm_and_apply_settings)
-        layout.addWidget(self.apply_button)
+        buttons_layout.addWidget(self.apply_button)
         
+        self.reset_button = QPushButton(translate("reset_to_defaults"))
+        self.reset_button.setStyleSheet("background: #7A4A5B; padding: 8px; border-radius: 5px;")
+        self.reset_button.clicked.connect(self.confirm_and_reset_settings)
+        buttons_layout.addWidget(self.reset_button)
+        
+        layout.addLayout(buttons_layout)
         layout.addStretch()
 
         self.update_ui_text()
@@ -207,11 +226,18 @@ class SettingsTab(QWidget):
             self.folder_name_input.setText(self.settings["base_folder_name"])
             self.temp_settings["base_folder_name"] = self.settings["base_folder_name"]
             return
-        if not os.path.isdir(self.temp_settings["base_directory"]):
-            QMessageBox.warning(self, translate("invalid_input"), translate("directory_not_exist"))
-            self.directory_input.setText(self.settings["base_directory"])
-            self.temp_settings["base_directory"] = self.settings["base_directory"]
-            return
+
+        # Create the base_directory if it doesn’t exist
+        base_dir = self.temp_settings["base_directory"]
+        if not os.path.isdir(base_dir):
+            try:
+                os.makedirs(base_dir, exist_ok=True)
+            except OSError as e:
+                QMessageBox.warning(self, translate("invalid_input"), 
+                                    translate("directory_creation_failed", str(e)))
+                self.directory_input.setText(self.settings["base_directory"])
+                self.temp_settings["base_directory"] = self.settings["base_directory"]
+                return
 
         language_changed = self.settings["language"] != self.temp_settings["language"]
         
@@ -253,6 +279,39 @@ class SettingsTab(QWidget):
             )
         )
 
+    def confirm_and_reset_settings(self):
+        """Confirm and reset settings to defaults."""
+        reply = QMessageBox.question(
+            self,
+            translate("reset_to_defaults"),
+            translate("confirm_reset_message"),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+        if reply == QMessageBox.StandardButton.Yes:
+            self.reset_to_defaults()
+
+    def reset_to_defaults(self):
+        """Reset temp_settings to default values and update UI."""
+        self.temp_settings = self.default_settings.copy()
+        
+        # Update UI elements to reflect default values
+        self.folder_name_input.setText(self.temp_settings["base_folder_name"])
+        self.directory_input.setText(self.temp_settings["base_directory"])
+        self.download_slider.setValue(self.temp_settings["simultaneous_downloads"])
+        self.download_spinbox.setValue(self.temp_settings["simultaneous_downloads"])
+        self.auto_update_checkbox.setChecked(self.temp_settings["auto_check_updates"])
+        
+        # Update language combo box
+        self.update_language_combo()
+        
+        QMessageBox.information(
+            self,
+            translate("reset_to_defaults"),
+            translate("settings_reset_message")
+        )
+
     def update_ui_text(self):
         self.folder_group.setTitle(translate("folder_settings"))
         self.folder_name_label.setText(translate("folder_name"))
@@ -270,6 +329,7 @@ class SettingsTab(QWidget):
         self.update_language_combo()
 
         self.apply_button.setText(translate("apply_changes"))
+        self.reset_button.setText(translate("reset_to_defaults"))
 
     def get_simultaneous_downloads(self):
         return self.settings["simultaneous_downloads"]

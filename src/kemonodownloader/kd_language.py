@@ -9,6 +9,23 @@ class KDLanguage:
         self.current_language = "english"  # Default language
         self.translations = {
             
+            # Reset to defaults translation
+            "reset_to_defaults" : {
+                "english" : "Reset to Defaults",
+                "japanese" : "デフォルトにリセット",
+                "korean" : "기본값으로 재설정",
+            },
+            "confirm_reset_message" : {
+                "english" : "Are you sure you want to reset all settings to their default values?",
+                "japanese" : "すべての設定をデフォルト値にリセットしてもよろしいですか？",
+                "korean" : "모든 설정을 기본값으로 재설정하시겠습니까?",
+            },
+            "settings_reset_message" : {
+                "english" : "Settings have been reset to defaults. Click 'Apply Changes' to save them.",
+                "japanese" : "設定がデフォルトにリセットされました。'変更を適用'をクリックして保存してください。",
+                "korean" : "설정이 기본값으로 재설정되었습니다. '변경 적용'을 클릭하여 저장하세요.",
+            },
+            
             # For post_downloader.py fallback validation
             "first_validation_failed": {
                 "english": "First validation method failed for {0}, trying fallback method...",

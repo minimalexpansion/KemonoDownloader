@@ -30,7 +30,7 @@
     <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey" alt="Platforms">
   </a>
   <a href="https://github.com/VoxDroid/KemonoDownloader/releases">
-    <img src="https://img.shields.io/badge/version-v3.3.0-brightgreen" alt="Version">
+    <img src="https://img.shields.io/badge/version-v3.4.0-brightgreen" alt="Version">
   </a>
   <a>
     <img src="https://img.shields.io/github/v/release/VoxDroid/KemonoDownloader?label=Latest%20Release" alt="Latest Release">
@@ -75,34 +75,45 @@ Welcome to **Kemono Downloader**, a versatile Python-based desktop application b
 - **Concurrent Downloads**: Adjust the number of simultaneous downloads (1-10) for optimal performance.
 - **File Deduplication**: Prevent redundant downloads using URL hashes.
 - **Image Previews**: Preview images before downloading to verify content.
-- **Customizable Settings**: Tailor save directories, folder names, notifications, and themes to your preference.
 - **Detailed Logging**: Track progress and troubleshoot issues with an in-app console.
 - **Cross-Platform UI**: Built with PyQt6 for a modern, intuitive interface compatible with multiple operating systems.
+- **Media Playback**: Preview videos and GIFs with built-in playback controls (play, pause, seek, volume).
+- **Multilingual Support**: Switch between English, Japanese, and Korean languages dynamically.
+- **Automatic Updates**: Check for new versions on startup with optional notifications.
 
 ## Installation
-Kemono Downloader is primarily a Python application that runs on any platform with the right dependencies. For non-programmers, an optional pre-built Windows executable is available. Choose the method that suits you:
+Kemono Downloader is now packaged using [Briefcase](https://briefcase.readthedocs.io/), making it easier to run or distribute as a native application across platforms. You can either build from source or use pre-compiled binaries where available.
 
-### Running the Python Source (All Platforms)
+### Building with Briefcase (All Platforms)
 1. Ensure you have **Python 3.9+** installed on your system (Windows, macOS, Linux).
 2. Clone this repository:
    ```bash
    git clone https://github.com/VoxDroid/KemonoDownloader.git
    cd KemonoDownloader
    ```
-3. Install the required dependencies (see [Dependencies](#dependencies) below):
+3. Install Briefcase and dependencies:
    ```bash
+   pip install briefcase
    pip install -r requirements.txt
    ```
-4. Run the application:
+4. Initialize the Briefcase project (if not already set up):
    ```bash
-   python main.py
+   briefcase create
    ```
+5. Build the application:
+   - **Windows**: `briefcase build windows`
+   - **macOS**: `briefcase build macos`
+   - **Linux**: `briefcase build linux` (AppImage support coming soon)
+6. Run the application:
+   - **Windows**: `briefcase run windows`
+   - **macOS**: `briefcase run macos`
+   - **Linux**: `briefcase run linux` (Coming Soon)
    - **Note**: An internet connection is required to fetch content from Kemono.su.
 
-### Optional Windows Executable (For Non-Programmers)
-- A pre-compiled Windows `.exe` is available for users who prefer not to set up Python.
-- Download the latest version from the [Releases page](https://github.com/VoxDroid/KemonoDownloader/releases).
-- Run the `.exe` file to launch the application—no additional setup needed.
+### Pre-Compiled Binaries
+- **Windows**: Download the latest `.exe` from the [Releases page](https://github.com/VoxDroid/KemonoDownloader/releases). Run it directly—no setup needed.
+- **macOS**: Download the latest universal `.dmg` (x86_64 and Apple Silicon) from the [Releases page](https://github.com/VoxDroid/KemonoDownloader/releases). Open the DMG, drag the app to Applications, and launch it.
+- **Linux**: Pre-compiled AppImage coming soon.
 
 ## Usage
 Upon launching, you’ll see an introductory screen with a "Launch" button. Click it to enter the main interface, featuring four tabs: **Post Downloader**, **Creator Downloader**, **Settings**, and **Help**. The in-app Help tab contains a comprehensive user manual.
@@ -169,9 +180,11 @@ Here are previews of the main tabs in Kemono Downloader:
 </table>
 
 ## Releases
-- Optional Windows executables are available in the [Releases section](https://github.com/VoxDroid/KemonoDownloader/releases) for non-programmers.
+- **Windows**: Pre-compiled `.exe` available in the [Releases section](https://github.com/VoxDroid/KemonoDownloader/releases).
+- **macOS**: Pre-compiled universal `.dmg` (x86_64 and Apple Silicon) available in the [Releases section](https://github.com/VoxDroid/KemonoDownloader/releases).
+- **Linux**: Pre-compiled AppImage coming soon.
 - Check release notes for details on new features, bug fixes, and version updates.
-- The Python source remains the primary method, supporting all platforms with proper setup.
+- The Briefcase-built Python source remains the primary method, supporting all platforms with proper setup.
 
 ## Support
 If you enjoy this project or want to support its development, consider these options:
@@ -197,6 +210,7 @@ To build from source, install the following Python packages:
 - `requests` (for HTTP requests)
 - `beautifulsoup4` (for HTML parsing)
 - `qtawesome` (for icons)
+- `briefcase` (for packaging the app)
 
 Create a `requirements.txt` file with these dependencies and run `pip install -r requirements.txt`.
 
@@ -204,3 +218,5 @@ Create a `requirements.txt` file with these dependencies and run `pip install -r
 
 **Developed by VoxDroid**  
 [GitHub](https://github.com/VoxDroid) | [Ko-fi](https://ko-fi.com/izeno)
+
+---
