@@ -103,17 +103,17 @@ Kemono Downloader is now packaged using [Briefcase](https://briefcase.readthedoc
 5. Build the application:
    - **Windows**: `briefcase build windows`
    - **macOS**: `briefcase build macos`
-   - **Linux**: `briefcase build linux` (AppImage support coming soon)
+   - **Linux**: `briefcase build linux` 
 6. Run the application:
    - **Windows**: `briefcase run windows`
    - **macOS**: `briefcase run macos`
-   - **Linux**: `briefcase run linux` (Coming Soon)
+   - **Linux**: `briefcase run linux` 
    - **Note**: An internet connection is required to fetch content from Kemono.su.
 
 ### Pre-Compiled Binaries
-- **Windows**: Download the latest `.exe` from the [Releases page](https://github.com/VoxDroid/KemonoDownloader/releases). Run it directly—no setup needed.
-- **macOS**: Download the latest universal `.dmg` (x86_64 and Apple Silicon) from the [Releases page](https://github.com/VoxDroid/KemonoDownloader/releases). Open the DMG, drag the app to Applications, and launch it.
-- **Linux**: Pre-compiled AppImage coming soon.
+- **Windows**: Download the latest `.exe` (portable) or `.msi` (installer) tagged with [**`W`**] for windows, from the [Releases page](https://github.com/VoxDroid/KemonoDownloader/releases). Run the msi installer or use the portable version for no-setup runs.
+- **macOS**: Download the latest universal `.dmg` (x86_64 and Apple Silicon) tagged with [**`M`**] for MacOS, from the [Releases page](https://github.com/VoxDroid/KemonoDownloader/releases). Open the DMG, drag the app to Applications, and launch it.
+- **Linux**: Download the latest `.rpm` (Fedora/Red Hat), `.deb` (Debian/Ubuntu), or `.pkg` (Arch/Pacman) [*Coming Soon*] tagged with [**`L`**] for Linux, from the [Releases page](https://github.com/VoxDroid/KemonoDownloader/releases). Run the installer, and launch the app.
 
 ## Usage
 Upon launching, you’ll see an introductory screen with a "Launch" button. Click it to enter the main interface, featuring four tabs: **Post Downloader**, **Creator Downloader**, **Settings**, and **Help**. The in-app Help tab contains a comprehensive user manual.
@@ -182,7 +182,7 @@ Here are previews of the main tabs in Kemono Downloader:
 ## Releases
 - **Windows**: Pre-compiled `.exe` available in the [Releases section](https://github.com/VoxDroid/KemonoDownloader/releases).
 - **macOS**: Pre-compiled universal `.dmg` (x86_64 and Apple Silicon) available in the [Releases section](https://github.com/VoxDroid/KemonoDownloader/releases).
-- **Linux**: Pre-compiled AppImage coming soon.
+- **Linux**: Pre-compiled `.rpm` (Fedora/Red Hat), `.deb` (Debian/Ubuntu), or `.pkg` (Arch/Pacman) [*Coming Soon*] available in the [Releases page](https://github.com/VoxDroid/KemonoDownloader/releases).
 - Check release notes for details on new features, bug fixes, and version updates.
 - The Briefcase-built Python source remains the primary method, supporting all platforms with proper setup.
 
