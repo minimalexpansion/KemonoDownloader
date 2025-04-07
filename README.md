@@ -78,7 +78,42 @@
 
 Welcome to **Kemono Downloader**, a versatile Python-based desktop application built with PyQt6, designed to download content from [Kemono.su](https://kemono.su). This tool enables users to archive individual posts or entire creator profiles from services like Patreon, Fanbox, and more, supporting a wide range of file types with customizable settings and advanced features.
 
+## Important Notices
+
+### Disclaimer
+
+KemonoDownloader is a tool designed for personal and educational use only, to assist users in downloading content from Kemono.su. The maintainers of this project **do not condone or support the unauthorized distribution of copyrighted material**. Users are solely responsible for ensuring they have the legal right to access and download content from Kemono.su, and for complying with all applicable laws, as well as the terms of service of the original platforms from which the content originates (e.g., Patreon, Pixiv Fanbox, Gumroad). 
+
+**Misuse of this tool to infringe on creators’ rights, violate copyright laws, or breach terms of service is strictly prohibited.** The maintainers are not liable for any misuse of KemonoDownloader or any consequences arising from its use, including but not limited to legal action, financial loss, or damage to third parties.
+
+### Ethical Use Guidelines
+
+KemonoDownloader interacts with content from Kemono.su, which may include material originally posted on paywalled platforms like Patreon, Pixiv Fanbox, and Gumroad. Many creators on these platforms rely on paid subscriptions for their livelihood. Downloading and redistributing their content without permission can harm their ability to continue creating.
+
+We strongly encourage users to:
+- Use KemonoDownloader responsibly and only for content you have the legal right to access.
+- Support creators directly by subscribing to their official channels on platforms like Patreon, Pixiv Fanbox, or Gumroad.
+- Avoid redistributing downloaded content, as this may violate copyright laws and harm creators.
+
+### Risks and Limitations
+
+- **Legal Risks**: Downloading content from Kemono.su may violate copyright laws or the terms of service of the original platforms. Users assume all legal risks associated with using this tool.
+- **Dependency on Kemono.su**: KemonoDownloader relies on Kemono.su, which has a history of inconsistent updates and downtime. If Kemono.su becomes unavailable, this tool will lose its functionality.
+- **Rate Limits and Errors**: Kemono.su may impose rate limits or other restrictions that affect download performance. The maintainers cannot guarantee uninterrupted access to Kemono.su’s content.
+
+## Community Standards
+
+We are committed to fostering a welcoming and respectful community around KemonoDownloader. Please read our [Code of Conduct](CODE_OF_CONDUCT.md) to understand the standards we expect from all contributors and users. Key points include:
+- Respecting the intellectual property rights of creators.
+- Refraining from using KemonoDownloader to engage in illegal activities, such as unauthorized distribution of copyrighted material.
+- Reporting any violations of the Code of Conduct to the maintainers via github, sourceforge or by opening a private issue labeled "Code of Conduct Violation."
+
 ## Table of Contents
+- [Important Notices](#important-notices)
+  - [Disclaimer](#disclaimer)
+  - [Ethical Use Guidelines](#ethical-use-guidelines)
+  - [Risks and Limitations](#risks-and-limitations)
+- [Community Standards](#community-standards)
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
@@ -213,19 +248,10 @@ Here are previews of the main tabs in Kemono Downloader:
 - The Briefcase-built Python source remains the primary method, supporting all platforms with proper setup.
 
 ## Support
-If you enjoy this project or want to support its development, consider these options:
-
-- **Ko-fi**: Buy me a coffee to fuel further development! Visit: [https://ko-fi.com/izeno](https://ko-fi.com/izeno).
-- **GitHub Issues**: Report bugs or suggest features on the [Issues page](https://github.com/VoxDroid/KemonoDownloader/issues).
-- **Discussions**: Engage with the community on the [Discussions tab](https://github.com/VoxDroid/KemonoDownloader/discussions) for support and ideas.
+For ways to get help, report issues, or support the project’s development, please see the [Support page](SUPPORT.md).
 
 ## Contributing
-Kemono Downloader is open-source, and contributions are encouraged! Here’s how to get involved:
-1. Fork the repository: [https://github.com/VoxDroid/KemonoDownloader](https://github.com/VoxDroid/KemonoDownloader).
-2. Create a branch for your feature or fix.
-3. Submit a pull request with a clear description of your changes.
-4. Adhere to coding standards (to be detailed in a future `CONTRIBUTING.md`).
-5. Test your changes thoroughly before submission.
+Kemono Downloader is open-source, and contributions are encouraged! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on how to get involved, submit pull requests, and suggest features. All contributors are expected to adhere to our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 This project is licensed under the [MIT License](LICENSE). Use, modify, and distribute it freely per the license terms.
