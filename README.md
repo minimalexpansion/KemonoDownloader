@@ -8,7 +8,7 @@
 
 <div align="center">
   <a>
-    <img src="https://raw.githubusercontent.com/VoxDroid/KemonoDownloader/refs/heads/main/assets/svg/github.svg" alt="GitHub" width="100">
+    <img src="https://raw.githubusercontent.com/VoxDroid/KemonoDownloader/0e8a40f17e1668eff12ff47e468b592f005b9af8/assets/svg/github.svg" alt="GitHub" width="100">
   </a>
 </div>
 
