@@ -5,6 +5,7 @@
 * Dynamic `Accept-Language` header based on the user's system language, supporting Windows, Linux, and macOS.
 * Dynamic `User-Agent` header using the `fake-useragent` library to always mimic a modern Chrome browser.
 * Platform-specific locale detection using `ctypes` on Windows to accurately map LCIDs to language tags.
+* Added a github workflow file to automate the building process.
 
 **Changed**
 * Updated the `User-Agent` header to use a recent Chrome version dynamically (previously hardcoded to Chrome 91).
