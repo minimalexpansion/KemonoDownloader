@@ -1,6 +1,17 @@
 # Kemono Downloader Release Notes
 
-## v3.4.0 (06 Apr 2025)
+## v3.5.0 (07 Apr 2025)
+**Added**
+* Dynamic `Accept-Language` header based on the user's system language, supporting Windows, Linux, and macOS.
+* Dynamic `User-Agent` header using the `fake-useragent` library to always mimic a modern Chrome browser.
+* Platform-specific locale detection using `ctypes` on Windows to accurately map LCIDs to language tags.
 
+**Changed**
+* Updated the `User-Agent` header to use a recent Chrome version dynamically (previously hardcoded to Chrome 91).
+
+**Dependencies**
+* Added `fake-useragent` as a new dependency for dynamic User-Agent generation.
+
+## v3.4.0 (06 Apr 2025)
 * Integration of briefcase
 * Added reset to defaults button for settings configuration

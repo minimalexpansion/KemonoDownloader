@@ -5,3 +5,4 @@ requests
 packaging
 pillow
 briefcase
+fake-useragent

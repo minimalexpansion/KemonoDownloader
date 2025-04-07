@@ -17,8 +17,38 @@ from PyQt6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PyQt6.QtMultimediaWidgets import QVideoWidget
 import subprocess
 from kemonodownloader.kd_language import translate
+import locale
+import ctypes
+from fake_useragent import UserAgent
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36", "Referer": "https://kemono.su/"}
+try:
+    locale.setlocale(locale.LC_ALL, '')
+except locale.Error:
+    locale.setlocale(locale.LC_ALL, 'C')
+
+if hasattr(ctypes, 'windll'):  
+    lcid = ctypes.windll.kernel32.GetUserDefaultLCID()
+    system_language = locale.windows_locale.get(lcid, "en_US")
+else:
+    locale_info = locale.getlocale(locale.LC_ALL)
+    system_language = locale_info[0] if locale_info and locale_info[0] else "en_US"
+
+system_language = system_language.replace('_', '-')  
+accept_language = f"{system_language},en;q=0.9"
+
+ua = UserAgent()
+user_agent = ua.chrome  
+
+HEADERS = {
+    "User-Agent": user_agent,
+    "Referer": "https://kemono.su/", 
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "Accept-Language": accept_language, 
+    "Accept-Encoding": "gzip, deflate",  
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1"
+}
+print(HEADERS)
 API_BASE = "https://kemono.su/api/v1"
 
 class PreviewThread(QThread):
@@ -1128,9 +1158,9 @@ class PostDownloaderTab(QWidget):
             self.append_log_to_console(translate("log_info", translate("attempting_fallback_validation", url)), "INFO")
             
             fallback_headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'User-Agent': user_agent,
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Language': accept_language,
                 'Connection': 'keep-alive',
                 'Upgrade-Insecure-Requests': '1',
                 'Cache-Control': 'max-age=0'
