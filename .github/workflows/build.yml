@@ -1,0 +1,1216 @@
+name: Build KemonoDownloader
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9' 
+          architecture: 'x64'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install briefcase toml PyQt6
+
+      - name: Check Briefcase version
+        run: |
+          briefcase --version
+
+      - name: Debug - Log commit message
+        run: |
+          echo "Commit message: ${{ github.event.head_commit.message }}"
+
+      - name: Extract version from pyproject.toml
+        id: extract_version
+        shell: bash
+        run: |
+          if [ ! -f "pyproject.toml" ]; then
+            echo "pyproject.toml not found!"
+            exit 1
+          fi
+          echo "Contents of pyproject.toml:"
+          cat pyproject.toml
+          VERSION=$(python -c "import toml; print(toml.load('pyproject.toml')['tool']['briefcase']['version'])")
+          if [ -z "$VERSION" ]; then
+            echo "Failed to extract version from pyproject.toml!"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Check if commit message matches version
+        id: check_commit
+        shell: bash
+        run: |
+          COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
+          VERSION="v${{ steps.extract_version.outputs.version }}"
+          if [ "$COMMIT_MESSAGE" = "$VERSION" ]; then
+            echo "match=true" >> $GITHUB_OUTPUT
+            echo "Commit message matches the version. Proceeding with build and release."
+          else
+            echo "match=false" >> $GITHUB_OUTPUT
+            echo "Commit message does not match the version. Skipping build and release steps."
+          fi
+          echo "Commit message: $COMMIT_MESSAGE"
+          echo "Expected version: $VERSION"
+          echo "Match: ${{ steps.check_commit.outputs.match }}"
+
+      - name: Create commit match indicator file
+        shell: bash
+        run: |
+          echo "${{ steps.check_commit.outputs.match }}" > commit-match.txt
+
+      - name: Upload commit match indicator
+        uses: actions/upload-artifact@v4
+        with:
+          name: commit-match-indicator-windows
+          path: commit-match.txt
+
+      - name: Build with Briefcase
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          briefcase create
+          briefcase build
+          briefcase package
+        env:
+          BRIEFCASE_PLATFORM: windows
+
+      - name: Normalize directory case
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          if [ -d "Dist" ]; then
+            mv Dist dist
+          fi
+
+      - name: Rename MSI file
+        id: rename_msi
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          cp dist/KemonoDownloader-${{ steps.extract_version.outputs.version }}.msi dist/W-KemonoDownloader-${{ steps.extract_version.outputs.version }}-x86_64.msi
+          rm dist/KemonoDownloader-${{ steps.extract_version.outputs.version }}.msi
+
+      - name: Debug - List output files
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          echo "Listing directories to check case:"
+          ls -ld dist Dist 2>/dev/null || true
+          echo "Listing output files:"
+          find . -type f | grep -E '\.(msi)$'
+
+      - name: Upload artifacts
+        if: steps.check_commit.outputs.match == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: KemonoDownloader-windows-latest
+          path: dist/W-KemonoDownloader-${{ steps.extract_version.outputs.version }}-x86_64.msi
+          include-hidden-files: true
+
+  build-macos-arm64:
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install gettext
+        run: |
+          brew unlink gettext || true
+          brew install gettext
+          brew link gettext --force
+          export DYLD_LIBRARY_PATH="/opt/homebrew/opt/gettext/lib:$DYLD_LIBRARY_PATH"
+          echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+          if [ -f "/opt/homebrew/opt/gettext/lib/libintl.8.dylib" ]; then
+            echo "libintl.8.dylib found at /opt/homebrew/opt/gettext/lib/"
+          else
+            echo "libintl.8.dylib not found at /opt/homebrew/opt/gettext/lib/"
+            exit 1
+          fi
+          echo "Checking architecture of libintl.8.dylib"
+          file /opt/homebrew/opt/gettext/lib/libintl.8.dylib
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Debug - Verify Python architecture
+        run: |
+          python3 --version
+          file $(which python3)
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install briefcase toml PyQt6
+
+      - name: Check and update Briefcase version
+        run: |
+          echo "Current Briefcase version:"
+          briefcase --version
+          echo "Updating Briefcase to the latest version..."
+          pip install --upgrade briefcase
+          echo "Updated Briefcase version:"
+          briefcase --version
+
+      - name: Debug - Inspect pyproject.toml
+        run: |
+          echo "Contents of pyproject.toml:"
+          cat pyproject.toml
+
+      - name: Extract version from pyproject.toml
+        id: extract_version
+        shell: bash
+        run: |
+          if [ ! -f "pyproject.toml" ]; then
+            echo "pyproject.toml not found!"
+            exit 1
+          fi
+          echo "Contents of pyproject.toml:"
+          cat pyproject.toml
+          VERSION=$(python -c "import toml; print(toml.load('pyproject.toml')['tool']['briefcase']['version'])")
+          if [ -z "$VERSION" ]; then
+            echo "Failed to extract version from pyproject.toml!"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Check if commit message matches version
+        id: check_commit
+        shell: bash
+        run: |
+          COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
+          VERSION="v${{ steps.extract_version.outputs.version }}"
+          if [ "$COMMIT_MESSAGE" = "$VERSION" ]; then
+            echo "match=true" >> $GITHUB_OUTPUT
+            echo "Commit message matches the version. Proceeding with build and release."
+          else
+            echo "match=false" >> $GITHUB_OUTPUT
+            echo "Commit message does not match the version. Skipping build and release steps."
+          fi
+          echo "Commit message: $COMMIT_MESSAGE"
+          echo "Expected version: $VERSION"
+          echo "Match: ${{ steps.check_commit.outputs.match }}"
+
+      - name: Create commit match indicator file
+        shell: bash
+        run: |
+          echo "${{ steps.check_commit.outputs.match }}" > commit-match.txt
+
+      - name: Upload commit match indicator
+        uses: actions/upload-artifact@v4
+        with:
+          name: commit-match-indicator-macos-arm64
+          path: commit-match.txt
+
+      - name: Build with Briefcase
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          briefcase create
+          briefcase build
+          briefcase package --adhoc-sign
+        env:
+          BRIEFCASE_PLATFORM: macOS
+
+      - name: Normalize directory case
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          if [ -d "MacOS" ]; then
+            mv MacOS macOS
+          fi
+
+      - name: Debug - List output files
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          echo "Listing directories to check case:"
+          ls -ld macOS MacOS dist 2>/dev/null || true
+          echo "Listing all files in workspace:"
+          find . -type f
+          echo "Listing output files (DMG):"
+          find . -type f | grep -E '\.(dmg)$'
+          echo "Expected DMG file path: dist/KemonoDownloader-${{ steps.extract_version.outputs.version }}.dmg"
+          if [ -f "dist/KemonoDownloader-${{ steps.extract_version.outputs.version }}.dmg" ]; then
+            echo "DMG file found at expected path."
+          else
+            echo "DMG file not found at expected path!"
+            exit 1
+          fi
+
+      - name: Rename DMG file
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          cp dist/KemonoDownloader-${{ steps.extract_version.outputs.version }}.dmg dist/M-KemonoDownloader-${{ steps.extract_version.outputs.version }}-arm64.dmg
+          rm dist/KemonoDownloader-${{ steps.extract_version.outputs.version }}.dmg
+
+      - name: Upload artifacts
+        if: steps.check_commit.outputs.match == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: KemonoDownloader-macos-arm64
+          path: dist/M-KemonoDownloader-${{ steps.extract_version.outputs.version }}-arm64.dmg
+          include-hidden-files: true
+
+  build-macos-x86_64:
+    runs-on: macos-13
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install gettext
+        run: |
+          brew unlink gettext || true
+          brew install gettext
+          brew link gettext --force
+          export DYLD_LIBRARY_PATH="/usr/local/opt/gettext/lib:$DYLD_LIBRARY_PATH"
+          echo "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
+          if [ -f "/usr/local/opt/gettext/lib/libintl.8.dylib" ]; then
+            echo "libintl.8.dylib found at /usr/local/opt/gettext/lib/"
+          else
+            echo "libintl.8.dylib not found at /usr/local/opt/gettext/lib/"
+            exit 1
+          fi
+          echo "Checking architecture of libintl.8.dylib"
+          file /usr/local/opt/gettext/lib/libintl.8.dylib
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          architecture: 'x64'
+
+      - name: Debug - Verify Python architecture
+        run: |
+          python3 --version
+          file $(which python3)
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install briefcase toml PyQt6
+
+      - name: Check and update Briefcase version
+        run: |
+          echo "Current Briefcase version:"
+          briefcase --version
+          echo "Updating Briefcase to the latest version..."
+          pip install --upgrade briefcase
+          echo "Updated Briefcase version:"
+          briefcase --version
+
+      - name: Debug - Inspect pyproject.toml
+        run: |
+          echo "Contents of pyproject.toml:"
+          cat pyproject.toml
+
+      - name: Extract version from pyproject.toml
+        id: extract_version
+        shell: bash
+        run: |
+          if [ ! -f "pyproject.toml" ]; then
+            echo "pyproject.toml not found!"
+            exit 1
+          fi
+          echo "Contents of pyproject.toml:"
+          cat pyproject.toml
+          VERSION=$(python -c "import toml; print(toml.load('pyproject.toml')['tool']['briefcase']['version'])")
+          if [ -z "$VERSION" ]; then
+            echo "Failed to extract version from pyproject.toml!"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Check if commit message matches version
+        id: check_commit
+        shell: bash
+        run: |
+          COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
+          VERSION="v${{ steps.extract_version.outputs.version }}"
+          if [ "$COMMIT_MESSAGE" = "$VERSION" ]; then
+            echo "match=true" >> $GITHUB_OUTPUT
+            echo "Commit message matches the version. Proceeding with build and release."
+          else
+            echo "match=false" >> $GITHUB_OUTPUT
+            echo "Commit message does not match the version. Skipping build and release steps."
+          fi
+          echo "Commit message: $COMMIT_MESSAGE"
+          echo "Expected version: $VERSION"
+          echo "Match: ${{ steps.check_commit.outputs.match }}"
+
+      - name: Create commit match indicator file
+        shell: bash
+        run: |
+          echo "${{ steps.check_commit.outputs.match }}" > commit-match.txt
+
+      - name: Upload commit match indicator
+        uses: actions/upload-artifact@v4
+        with:
+          name: commit-match-indicator-macos-x86_64
+          path: commit-match.txt
+
+      - name: Build with Briefcase
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          briefcase create
+          briefcase build
+          briefcase package --adhoc-sign
+        env:
+          BRIEFCASE_PLATFORM: macOS
+
+      - name: Normalize directory case
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          if [ -d "MacOS" ]; then
+            mv MacOS macOS
+          fi
+
+      - name: Debug - List output files
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          echo "Listing directories to check case:"
+          ls -ld macOS MacOS dist 2>/dev/null || true
+          echo "Listing all files in workspace:"
+          find . -type f
+          echo "Listing output files (DMG):"
+          find . -type f | grep -E '\.(dmg)$'
+          echo "Expected DMG file path: dist/KemonoDownloader-${{ steps.extract_version.outputs.version }}.dmg"
+          if [ -f "dist/KemonoDownloader-${{ steps.extract_version.outputs.version }}.dmg" ]; then
+            echo "DMG file found at expected path."
+          else
+            echo "DMG file not found at expected path!"
+            exit 1
+          fi
+
+      - name: Rename DMG file
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          cp dist/KemonoDownloader-${{ steps.extract_version.outputs.version }}.dmg dist/M-KemonoDownloader-${{ steps.extract_version.outputs.version }}-x86_64.dmg
+          rm dist/KemonoDownloader-${{ steps.extract_version.outputs.version }}.dmg
+
+      - name: Upload artifacts
+        if: steps.check_commit.outputs.match == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: KemonoDownloader-macos-x86_64
+          path: dist/M-KemonoDownloader-${{ steps.extract_version.outputs.version }}-x86_64.dmg
+          include-hidden-files: true
+
+  build-ubuntu-deb:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: 'x64'
+
+      - name: Debug - Verify Python version
+        run: |
+          echo "Python version used by the workflow:"
+          python3 --version
+          echo "System Python version:"
+          /usr/bin/python3 --version
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install briefcase toml PyQt6
+
+      - name: Check and update Briefcase version
+        run: |
+          echo "Current Briefcase version:"
+          briefcase --version
+          echo "Updating Briefcase to the latest version..."
+          pip install --upgrade briefcase
+          echo "Updated Briefcase version:"
+          briefcase --version
+
+      - name: Debug - Inspect pyproject.toml
+        run: |
+          echo "Contents of pyproject.toml:"
+          cat pyproject.toml
+
+      - name: Debug - Log commit message
+        run: |
+          echo "Commit message: ${{ github.event.head_commit.message }}"
+
+      - name: Extract version from pyproject.toml
+        id: extract_version
+        shell: bash
+        run: |
+          if [ ! -f "pyproject.toml" ]; then
+            echo "pyproject.toml not found!"
+            exit 1
+          fi
+          echo "Contents of pyproject.toml:"
+          cat pyproject.toml
+          VERSION=$(python -c "import toml; print(toml.load('pyproject.toml')['tool']['briefcase']['version'])")
+          if [ -z "$VERSION" ]; then
+            echo "Failed to extract version from pyproject.toml!"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Check if commit message matches version
+        id: check_commit
+        shell: bash
+        run: |
+          COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
+          VERSION="v${{ steps.extract_version.outputs.version }}"
+          if [ "$COMMIT_MESSAGE" = "$VERSION" ]; then
+            echo "match=true" >> $GITHUB_OUTPUT
+            echo "Commit message matches the version. Proceeding with build and release."
+          else
+            echo "match=false" >> $GITHUB_OUTPUT
+            echo "Commit message does not match the version. Skipping build and release steps."
+          fi
+          echo "Commit message: $COMMIT_MESSAGE"
+          echo "Expected version: $VERSION"
+          echo "Match: ${{ steps.check_commit.outputs.match }}"
+
+      - name: Create commit match indicator file
+        shell: bash
+        run: |
+          echo "${{ steps.check_commit.outputs.match }}" > commit-match.txt
+
+      - name: Upload commit match indicator
+        uses: actions/upload-artifact@v4
+        with:
+          name: commit-match-indicator-ubuntu-deb
+          path: commit-match.txt
+
+      - name: Build with Briefcase in Docker
+        if: steps.check_commit.outputs.match == 'true'
+        run: |
+          docker run --rm -v $(pwd):/app -w /app ubuntu:noble /bin/bash -c "
+            apt-get update &&
+            apt-get install -y python3 python3-pip python3-venv libqt6core6 libqt6gui6 libqt6widgets6 git &&
+            python3 -m venv /app/venv &&
+            . /app/venv/bin/activate &&
+            pip install --upgrade pip &&
+            pip install briefcase toml PyQt6 &&
+            briefcase create &&
+            briefcase build &&
+            briefcase package -p deb
+          "
+        env:
+          BRIEFCASE_PLATFORM: linux
+
+      - name: Normalize directory case
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          if [ -d "Linux" ]; then
+            mv Linux linux
+          fi
+
+      - name: Fix permissions
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          sudo chown -R runner:runner dist
+          ls -ld dist
+          ls -l dist
+
+      - name: Debug - List output files
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          echo "Listing directories to check case:"
+          ls -ld linux Linux 2>/dev/null || true
+          echo "Listing all files in workspace:"
+          find . -type f
+          echo "Listing output files (DEB):"
+          find . -type f | grep -E '\.deb$'
+          echo "Expected DEB file path: dist/kemonodownloader_${{ steps.extract_version.outputs.version }}-1~ubuntu-noble_amd64.deb"
+          if [ -f "dist/kemonodownloader_${{ steps.extract_version.outputs.version }}-1~ubuntu-noble_amd64.deb" ]; then
+            echo "DEB file found at expected path."
+          else
+            echo "DEB file not found at expected path!"
+            exit 1
+          fi
+
+      - name: Rename DEB file
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          cp dist/kemonodownloader_${{ steps.extract_version.outputs.version }}-1~ubuntu-noble_amd64.deb dist/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1~ubuntu-noble_amd64.deb
+          rm dist/kemonodownloader_${{ steps.extract_version.outputs.version }}-1~ubuntu-noble_amd64.deb
+
+      - name: Upload artifacts
+        if: steps.check_commit.outputs.match == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: KemonoDownloader-ubuntu-deb
+          path: dist/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1~ubuntu-noble_amd64.deb
+          include-hidden-files: true
+
+  build-ubuntu-rpm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: 'x64'
+
+      - name: Debug - Verify Python version
+        run: |
+          echo "Python version used by the workflow:"
+          python3 --version
+          echo "System Python version:"
+          /usr/bin/python3 --version
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install briefcase toml PyQt6
+
+      - name: Check and update Briefcase version
+        run: |
+          echo "Current Briefcase version:"
+          briefcase --version
+          echo "Updating Briefcase to the latest version..."
+          pip install --upgrade briefcase
+          echo "Updated Briefcase version:"
+          briefcase --version
+
+      - name: Debug - Inspect pyproject.toml
+        run: |
+          echo "Contents of pyproject.toml:"
+          cat pyproject.toml
+
+      - name: Debug - Log commit message
+        run: |
+          echo "Commit message: ${{ github.event.head_commit.message }}"
+
+      - name: Extract version from pyproject.toml
+        id: extract_version
+        shell: bash
+        run: |
+          if [ ! -f "pyproject.toml" ]; then
+            echo "pyproject.toml not found!"
+            exit 1
+          fi
+          echo "Contents of pyproject.toml:"
+          cat pyproject.toml
+          VERSION=$(python -c "import toml; print(toml.load('pyproject.toml')['tool']['briefcase']['version'])")
+          if [ -z "$VERSION" ]; then
+            echo "Failed to extract version from pyproject.toml!"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Check if commit message matches version
+        id: check_commit
+        shell: bash
+        run: |
+          COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
+          VERSION="v${{ steps.extract_version.outputs.version }}"
+          if [ "$COMMIT_MESSAGE" = "$VERSION" ]; then
+            echo "match=true" >> $GITHUB_OUTPUT
+            echo "Commit message matches the version. Proceeding with build and release."
+          else
+            echo "match=false" >> $GITHUB_OUTPUT
+            echo "Commit message does not match the version. Skipping build and release steps."
+          fi
+          echo "Commit message: $COMMIT_MESSAGE"
+          echo "Expected version: $VERSION"
+          echo "Match: ${{ steps.check_commit.outputs.match }}"
+
+      - name: Create commit match indicator file
+        shell: bash
+        run: |
+          echo "${{ steps.check_commit.outputs.match }}" > commit-match.txt
+
+      - name: Upload commit match indicator
+        uses: actions/upload-artifact@v4
+        with:
+          name: commit-match-indicator-ubuntu-rpm
+          path: commit-match.txt
+
+      - name: Build with Briefcase in Docker
+        if: steps.check_commit.outputs.match == 'true'
+        run: |
+          docker run --rm -v $(pwd):/app -w /app fedora:latest /bin/bash -c "
+            dnf install -y python3 python3-pip python3-devel gcc qt6-qtbase qt6-qtbase-devel git rpm-build &&
+            python3 -m venv /app/venv &&
+            . /app/venv/bin/activate &&
+            pip install --upgrade pip &&
+            pip install briefcase toml PyQt6 &&
+            briefcase create &&
+            briefcase build &&
+            briefcase package -p rpm
+          "
+        env:
+          BRIEFCASE_PLATFORM: linux
+
+      - name: Normalize directory case
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          if [ -d "Linux" ]; then
+            mv Linux linux
+          fi
+
+      - name: Fix permissions
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          sudo chown -R runner:runner dist
+          ls -ld dist
+          ls -l dist
+
+      - name: Debug - List output files
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          echo "Listing directories to check case:"
+          ls -ld linux Linux 2>/dev/null || true
+          echo "Listing all files in workspace:"
+          find . -type f
+          echo "Listing output files (RPM):"
+          find . -type f | grep -E '\.rpm$'
+          echo "Expected RPM file path: dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1.fc41.x86_64.rpm"
+          if [ -f "dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1.fc41.x86_64.rpm" ]; then
+            echo "RPM file found at expected path."
+          else
+            echo "RPM file not found at expected path!"
+            exit 1
+          fi
+
+      - name: Rename RPM file
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          cp dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1.fc41.x86_64.rpm dist/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1.fc41.x86_64.rpm
+          rm dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1.fc41.x86_64.rpm
+
+      - name: Upload artifacts
+        if: steps.check_commit.outputs.match == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: KemonoDownloader-ubuntu-rpm
+          path: dist/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1.fc41.x86_64.rpm
+          include-hidden-files: true
+
+  build-ubuntu-pkg:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: 'x64'
+
+      - name: Debug - Verify Python version
+        run: |
+          echo "Python version used by the workflow:"
+          python3 --version
+          echo "System Python version:"
+          /usr/bin/python3 --version
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install briefcase toml PyQt6
+
+      - name: Check and update Briefcase version
+        run: |
+          echo "Current Briefcase version:"
+          briefcase --version
+          echo "Updating Briefcase to the latest version..."
+          pip install --upgrade briefcase
+          echo "Updated Briefcase version:"
+          briefcase --version
+
+      - name: Debug - Inspect pyproject.toml
+        run: |
+          echo "Contents of pyproject.toml:"
+          cat pyproject.toml
+
+      - name: Debug - Log commit message
+        run: |
+          echo "Commit message: ${{ github.event.head_commit.message }}"
+
+      - name: Extract version from pyproject.toml
+        id: extract_version
+        shell: bash
+        run: |
+          if [ ! -f "pyproject.toml" ]; then
+            echo "pyproject.toml not found!"
+            exit 1
+          fi
+          echo "Contents of pyproject.toml:"
+          cat pyproject.toml
+          VERSION=$(python -c "import toml; print(toml.load('pyproject.toml')['tool']['briefcase']['version'])")
+          if [ -z "$VERSION" ]; then
+            echo "Failed to extract version from pyproject.toml!"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Check if commit message matches version
+        id: check_commit
+        shell: bash
+        run: |
+          COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
+          VERSION="v${{ steps.extract_version.outputs.version }}"
+          if [ "$COMMIT_MESSAGE" = "$VERSION" ]; then
+            echo "match=true" >> $GITHUB_OUTPUT
+            echo "Commit message matches the version. Proceeding with build and release."
+          else
+            echo "match=false" >> $GITHUB_OUTPUT
+            echo "Commit message does not match the version. Skipping build and release steps."
+          fi
+          echo "Commit message: $COMMIT_MESSAGE"
+          echo "Expected version: $VERSION"
+          echo "Match: ${{ steps.check_commit.outputs.match }}"
+
+      - name: Create commit match indicator file
+        shell: bash
+        run: |
+          echo "${{ steps.check_commit.outputs.match }}" > commit-match.txt
+
+      - name: Upload commit match indicator
+        uses: actions/upload-artifact@v4
+        with:
+          name: commit-match-indicator-ubuntu-pkg
+          path: commit-match.txt
+
+      - name: Build with Briefcase in Docker
+        if: steps.check_commit.outputs.match == 'true'
+        run: |
+          docker run --rm -v $(pwd):/app -w /app archlinux:latest /bin/bash -c "
+            pacman -Syu --noconfirm &&
+            pacman -S --noconfirm python python-pip base-devel qt6-base git &&
+            useradd -m -s /bin/bash builduser &&
+            chown -R builduser:builduser /app &&
+            chmod -R u+rw /app &&
+            su - builduser -c '
+              cd /app &&
+              python -m venv /app/venv &&
+              . /app/venv/bin/activate &&
+              pip install --upgrade pip &&
+              pip install briefcase toml PyQt6 &&
+              briefcase create &&
+              briefcase build &&
+              briefcase package -p pkg
+            '
+          "
+        env:
+          BRIEFCASE_PLATFORM: linux
+
+      - name: Normalize directory case
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          if [ -d "Linux" ]; then
+            mv Linux linux
+          fi
+
+      - name: Fix permissions
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          sudo chown -R runner:runner dist
+          ls -ld dist
+          ls -l dist
+
+      - name: Debug - List output files
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          echo "Listing directories to check case:"
+          ls -ld linux Linux 2>/dev/null || true
+          echo "Listing all files in workspace:"
+          find . -type f
+          echo "Listing output files (PKG):"
+          find . -type f | grep -E '\.pkg\.tar\.zst$'
+          echo "Expected PKG file path: dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1-x86_64.pkg.tar.zst"
+          if [ -f "dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1-x86_64.pkg.tar.zst" ]; then
+            echo "PKG file found at expected path."
+          else
+            echo "PKG file not found at expected path!"
+            exit 1
+          fi
+
+      - name: Rename PKG file
+        if: steps.check_commit.outputs.match == 'true'
+        shell: bash
+        run: |
+          cp dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1-x86_64.pkg.tar.zst dist/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1-x86_64.pkg.tar.zst
+          rm dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1-x86_64.pkg.tar.zst
+
+      - name: Upload artifacts
+        if: steps.check_commit.outputs.match == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: KemonoDownloader-ubuntu-pkg
+          path: dist/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1-x86_64.pkg.tar.zst
+          include-hidden-files: true
+
+  release:
+    needs: [build-windows, build-macos-arm64, build-macos-x86_64, build-ubuntu-deb, build-ubuntu-rpm, build-ubuntu-pkg]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Download commit match indicators
+        uses: actions/download-artifact@v4
+        with:
+          path: commit-match-artifacts
+
+      - name: Debug - List downloaded commit match indicators
+        shell: bash
+        run: |
+          echo "Listing downloaded commit match indicators:"
+          find commit-match-artifacts -type f
+
+      - name: Read commit match indicators
+        id: read_commit_match
+        shell: bash
+        run: |
+          MATCH=true
+          for job in windows macos-arm64 macos-x86_64 ubuntu-deb ubuntu-rpm ubuntu-pkg; do
+            FILE="commit-match-artifacts/commit-match-indicator-$job/commit-match.txt"
+            if [ -f "$FILE" ]; then
+              CONTENT=$(cat "$FILE")
+              echo "Commit match for $job: $CONTENT"
+              if [ "$CONTENT" != "true" ]; then
+                MATCH=false
+              fi
+            else
+              echo "Commit match indicator for $job not found!"
+              MATCH=false
+            fi
+          done
+          echo "commit_match=$MATCH" >> $GITHUB_OUTPUT
+          echo "Overall commit match: $MATCH"
+
+      - name: Check if release should proceed
+        if: steps.read_commit_match.outputs.commit_match != 'true'
+        shell: bash
+        run: |
+          echo "Commit message did not match the version in one or more jobs. Skipping release job."
+          exit 0
+
+      - name: Set up Python
+        if: steps.read_commit_match.outputs.commit_match == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          architecture: 'x64'
+
+      - name: Install dependencies
+        if: steps.read_commit_match.outputs.commit_match == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install toml
+
+      - name: Extract version from pyproject.toml
+        if: steps.read_commit_match.outputs.commit_match == 'true'
+        id: extract_version
+        shell: bash
+        run: |
+          if [ ! -f "pyproject.toml" ]; then
+            echo "pyproject.toml not found!"
+            exit 1
+          fi
+          echo "Contents of pyproject.toml:"
+          cat pyproject.toml
+          VERSION=$(python -c "import toml; print(toml.load('pyproject.toml')['tool']['briefcase']['version'])")
+          if [ -z "$VERSION" ]; then
+            echo "Failed to extract version from pyproject.toml!"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Check if tag exists
+        if: steps.read_commit_match.outputs.commit_match == 'true'
+        id: check_tag
+        shell: bash
+        run: |
+          TAG="v${{ steps.extract_version.outputs.version }}"
+          git fetch --tags
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG exists."
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Tag $TAG does not exist."
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if release already exists
+        if: steps.read_commit_match.outputs.commit_match == 'true'
+        id: check_release
+        shell: bash
+        run: |
+          TAG="v${{ steps.extract_version.outputs.version }}"
+          RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG")
+          if echo "$RESPONSE" | grep -q '"message": "Not Found"'; then
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Release does not exist for tag $TAG. Proceeding to create release."
+          else
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release already exists for tag $TAG. Skipping release creation."
+            echo "Release details: $RESPONSE"
+          fi
+          echo "Release exists: ${{ steps.check_release.outputs.exists }}"
+
+      - name: Download artifacts
+        if: steps.read_commit_match.outputs.commit_match == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Debug - List downloaded artifacts
+        if: steps.read_commit_match.outputs.commit_match == 'true'
+        shell: bash
+        run: |
+          echo "Listing downloaded artifacts:"
+          find artifacts -type f
+
+      - name: Create Release
+        if: steps.read_commit_match.outputs.commit_match == 'true' && steps.check_release.outputs.exists == 'false'
+        id: create_release
+        shell: bash
+        run: |
+          TAG="v${{ steps.extract_version.outputs.version }}"
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases" \
+            -d "{\"tag_name\":\"$TAG\",\"name\":\"Kemono Downloader $TAG\",\"draft\":false,\"prerelease\":false,\"body\":\"\"}")
+          echo "Create release response: $RESPONSE"
+          UPLOAD_URL=$(echo "$RESPONSE" | jq -r '.upload_url' | sed 's/{?name,label}//')
+          if [ -z "$UPLOAD_URL" ]; then
+            echo "Failed to create release. Response: $RESPONSE"
+            exit 1
+          fi
+          echo "upload_url=$UPLOAD_URL" >> $GITHUB_OUTPUT
+
+      - name: Debug - Verify release creation
+        if: steps.read_commit_match.outputs.commit_match == 'true' && steps.check_release.outputs.exists == 'false'
+        shell: bash
+        run: |
+          TAG="v${{ steps.extract_version.outputs.version }}"
+          RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG")
+          if echo "$RESPONSE" | grep -q '"draft": false'; then
+            echo "Release created successfully and is published."
+          else
+            echo "Release creation failed or is not published. Response: $RESPONSE"
+            exit 1
+          fi
+          echo "Release details: $RESPONSE"
+
+      - name: Upload Windows Release Asset
+        if: steps.read_commit_match.outputs.commit_match == 'true' && steps.check_release.outputs.exists == 'false'
+        shell: bash
+        run: |
+          ASSET_PATH="artifacts/KemonoDownloader-windows-latest/W-KemonoDownloader-${{ steps.extract_version.outputs.version }}-x86_64.msi"
+          ASSET_NAME="W-KemonoDownloader-${{ steps.extract_version.outputs.version }}-x86_64.msi"
+          if [ ! -f "$ASSET_PATH" ]; then
+            echo "Asset file not found at $ASSET_PATH"
+            exit 1
+          fi
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/x-msi" \
+            --data-binary "@$ASSET_PATH" \
+            "${{ steps.create_release.outputs.upload_url }}?name=$ASSET_NAME")
+          echo "Upload asset response: $RESPONSE"
+          STATE=$(echo "$RESPONSE" | jq -r '.state')
+          if [ "$STATE" = "uploaded" ]; then
+            echo "Asset uploaded successfully."
+          else
+            echo "Failed to upload asset. Response: $RESPONSE"
+            exit 1
+          fi
+
+      - name: Upload macOS (arm64) Release Asset
+        if: steps.read_commit_match.outputs.commit_match == 'true' && steps.check_release.outputs.exists == 'false'
+        shell: bash
+        run: |
+          ASSET_PATH="artifacts/KemonoDownloader-macos-arm64/M-KemonoDownloader-${{ steps.extract_version.outputs.version }}-arm64.dmg"
+          ASSET_NAME="M-KemonoDownloader-${{ steps.extract_version.outputs.version }}-arm64.dmg"
+          if [ ! -f "$ASSET_PATH" ]; then
+            echo "Asset file not found at $ASSET_PATH"
+            exit 1
+          fi
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/x-apple-diskimage" \
+            --data-binary "@$ASSET_PATH" \
+            "${{ steps.create_release.outputs.upload_url }}?name=$ASSET_NAME")
+          echo "Upload asset response: $RESPONSE"
+          STATE=$(echo "$RESPONSE" | jq -r '.state')
+          if [ "$STATE" = "uploaded" ]; then
+            echo "Asset uploaded successfully."
+          else
+            echo "Failed to upload asset. Response: $RESPONSE"
+            exit 1
+          fi
+
+      - name: Upload macOS (x86_64) Release Asset
+        if: steps.read_commit_match.outputs.commit_match == 'true' && steps.check_release.outputs.exists == 'false'
+        shell: bash
+        run: |
+          ASSET_PATH="artifacts/KemonoDownloader-macos-x86_64/M-KemonoDownloader-${{ steps.extract_version.outputs.version }}-x86_64.dmg"
+          ASSET_NAME="M-KemonoDownloader-${{ steps.extract_version.outputs.version }}-x86_64.dmg"
+          if [ ! -f "$ASSET_PATH" ]; then
+            echo "Asset file not found at $ASSET_PATH"
+            exit 1
+          fi
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/x-apple-diskimage" \
+            --data-binary "@$ASSET_PATH" \
+            "${{ steps.create_release.outputs.upload_url }}?name=$ASSET_NAME")
+          echo "Upload asset response: $RESPONSE"
+          STATE=$(echo "$RESPONSE" | jq -r '.state')
+          if [ "$STATE" = "uploaded" ]; then
+            echo "Asset uploaded successfully."
+          else
+            echo "Failed to upload asset. Response: $RESPONSE"
+            exit 1
+          fi
+
+      - name: Upload Debian (.deb) Release Asset
+        if: steps.read_commit_match.outputs.commit_match == 'true' && steps.check_release.outputs.exists == 'false'
+        shell: bash
+        run: |
+          ASSET_PATH="artifacts/KemonoDownloader-ubuntu-deb/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1~ubuntu-noble_amd64.deb"
+          ASSET_NAME="L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1~ubuntu-noble_amd64.deb"
+          if [ ! -f "$ASSET_PATH" ]; then
+            echo "Asset file not found at $ASSET_PATH"
+            exit 1
+          fi
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary "@$ASSET_PATH" \
+            "${{ steps.create_release.outputs.upload_url }}?name=$ASSET_NAME")
+          echo "Upload asset response: $RESPONSE"
+          STATE=$(echo "$RESPONSE" | jq -r '.state')
+          if [ "$STATE" = "uploaded" ]; then
+            echo "Asset uploaded successfully."
+          else
+            echo "Failed to upload asset. Response: $RESPONSE"
+            exit 1
+          fi
+
+      - name: Upload Red Hat (.rpm) Release Asset
+        if: steps.read_commit_match.outputs.commit_match == 'true' && steps.check_release.outputs.exists == 'false'
+        shell: bash
+        run: |
+          ASSET_PATH="artifacts/KemonoDownloader-ubuntu-rpm/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1.fc41.x86_64.rpm"
+          ASSET_NAME="L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1.fc41.x86_64.rpm"
+          if [ ! -f "$ASSET_PATH" ]; then
+            echo "Asset file not found at $ASSET_PATH"
+            exit 1
+          fi
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary "@$ASSET_PATH" \
+            "${{ steps.create_release.outputs.upload_url }}?name=$ASSET_NAME")
+          echo "Upload asset response: $RESPONSE"
+          STATE=$(echo "$RESPONSE" | jq -r '.state')
+          if [ "$STATE" = "uploaded" ]; then
+            echo "Asset uploaded successfully."
+          else
+            echo "Failed to upload asset. Response: $RESPONSE"
+            exit 1
+          fi
+
+      - name: Upload Arch (.pkg.tar.zst) Release Asset
+        if: steps.read_commit_match.outputs.commit_match == 'true' && steps.check_release.outputs.exists == 'false'
+        shell: bash
+        run: |
+          ASSET_PATH="artifacts/KemonoDownloader-ubuntu-pkg/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1-x86_64.pkg.tar.zst"
+          ASSET_NAME="L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1-x86_64.pkg.tar.zst"
+          if [ ! -f "$ASSET_PATH" ]; then
+            echo "Asset file not found at $ASSET_PATH"
+            exit 1
+          fi
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary "@$ASSET_PATH" \
+            "${{ steps.create_release.outputs.upload_url }}?name=$ASSET_NAME")
+          echo "Upload asset response: $RESPONSE"
+          STATE=$(echo "$RESPONSE" | jq -r '.state')
+          if [ "$STATE" = "uploaded" ]; then
+            echo "Asset uploaded successfully."
+          else
+            echo "Failed to upload asset. Response: $RESPONSE"
+            exit 1
+          fi
