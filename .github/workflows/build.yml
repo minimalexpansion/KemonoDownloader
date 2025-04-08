@@ -6,7 +6,65 @@ on:
     branches: [ main ]
 
 jobs:
+  check-for-building:
+    runs-on: ubuntu-latest
+    outputs:
+      match: ${{ steps.check_commit.outputs.match }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          architecture: 'x64'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install toml
+
+      - name: Extract version from pyproject.toml
+        id: extract_version
+        shell: bash
+        run: |
+          if [ ! -f "pyproject.toml" ]; then
+            echo "pyproject.toml not found!"
+            exit 1
+          fi
+          echo "Contents of pyproject.toml:"
+          cat pyproject.toml
+          VERSION=$(python -c "import toml; print(toml.load('pyproject.toml')['tool']['briefcase']['version'])")
+          if [ -z "$VERSION" ]; then
+            echo "Failed to extract version from pyproject.toml!"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Check if commit title matches version
+        id: check_commit
+        shell: bash
+        run: |
+          COMMIT_TITLE=$(git log -1 --pretty=%s)  # Extracts only the commit title (first line)
+          VERSION="v${{ steps.extract_version.outputs.version }}"
+          if [ "$COMMIT_TITLE" = "$VERSION" ]; then
+            echo "match=true" >> $GITHUB_OUTPUT
+            echo "Commit title matches the version. Proceeding with builds."
+          else
+            echo "match=false" >> $GITHUB_OUTPUT
+            echo "Commit title does not match the version. Skipping builds."
+          fi
+          echo "Commit title: $COMMIT_TITLE"
+          echo "Expected version: $VERSION"
+          echo "Match: ${{ steps.check_commit.outputs.match }}"
+
   build-windows:
+    needs: check-for-building
+    if: needs.check-for-building.outputs.match == 'true'
     runs-on: windows-latest
 
     steps:
@@ -52,27 +110,10 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION"
 
-      - name: Check if commit message matches version
-        id: check_commit
-        shell: bash
-        run: |
-          COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
-          VERSION="v${{ steps.extract_version.outputs.version }}"
-          if [ "$COMMIT_MESSAGE" = "$VERSION" ]; then
-            echo "match=true" >> $GITHUB_OUTPUT
-            echo "Commit message matches the version. Proceeding with build and release."
-          else
-            echo "match=false" >> $GITHUB_OUTPUT
-            echo "Commit message does not match the version. Skipping build and release steps."
-          fi
-          echo "Commit message: $COMMIT_MESSAGE"
-          echo "Expected version: $VERSION"
-          echo "Match: ${{ steps.check_commit.outputs.match }}"
-
       - name: Create commit match indicator file
         shell: bash
         run: |
-          echo "${{ steps.check_commit.outputs.match }}" > commit-match.txt
+          echo "true" > commit-match.txt
 
       - name: Upload commit match indicator
         uses: actions/upload-artifact@v4
@@ -81,7 +122,6 @@ jobs:
           path: commit-match.txt
 
       - name: Build with Briefcase
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           briefcase create
@@ -91,7 +131,6 @@ jobs:
           BRIEFCASE_PLATFORM: windows
 
       - name: Normalize directory case
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           if [ -d "Dist" ]; then
@@ -100,14 +139,12 @@ jobs:
 
       - name: Rename MSI file
         id: rename_msi
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           cp dist/KemonoDownloader-${{ steps.extract_version.outputs.version }}.msi dist/W-KemonoDownloader-${{ steps.extract_version.outputs.version }}-x86_64.msi
           rm dist/KemonoDownloader-${{ steps.extract_version.outputs.version }}.msi
 
       - name: Debug - List output files
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           echo "Listing directories to check case:"
@@ -116,7 +153,6 @@ jobs:
           find . -type f | grep -E '\.(msi)$'
 
       - name: Upload artifacts
-        if: steps.check_commit.outputs.match == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: KemonoDownloader-windows-latest
@@ -124,6 +160,8 @@ jobs:
           include-hidden-files: true
 
   build-macos-arm64:
+    needs: check-for-building
+    if: needs.check-for-building.outputs.match == 'true'
     runs-on: macos-latest
 
     steps:
@@ -195,27 +233,10 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION"
 
-      - name: Check if commit message matches version
-        id: check_commit
-        shell: bash
-        run: |
-          COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
-          VERSION="v${{ steps.extract_version.outputs.version }}"
-          if [ "$COMMIT_MESSAGE" = "$VERSION" ]; then
-            echo "match=true" >> $GITHUB_OUTPUT
-            echo "Commit message matches the version. Proceeding with build and release."
-          else
-            echo "match=false" >> $GITHUB_OUTPUT
-            echo "Commit message does not match the version. Skipping build and release steps."
-          fi
-          echo "Commit message: $COMMIT_MESSAGE"
-          echo "Expected version: $VERSION"
-          echo "Match: ${{ steps.check_commit.outputs.match }}"
-
       - name: Create commit match indicator file
         shell: bash
         run: |
-          echo "${{ steps.check_commit.outputs.match }}" > commit-match.txt
+          echo "true" > commit-match.txt
 
       - name: Upload commit match indicator
         uses: actions/upload-artifact@v4
@@ -224,7 +245,6 @@ jobs:
           path: commit-match.txt
 
       - name: Build with Briefcase
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           briefcase create
@@ -234,7 +254,6 @@ jobs:
           BRIEFCASE_PLATFORM: macOS
 
       - name: Normalize directory case
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           if [ -d "MacOS" ]; then
@@ -242,7 +261,6 @@ jobs:
           fi
 
       - name: Debug - List output files
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           echo "Listing directories to check case:"
@@ -260,14 +278,12 @@ jobs:
           fi
 
       - name: Rename DMG file
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           cp dist/KemonoDownloader-${{ steps.extract_version.outputs.version }}.dmg dist/M-KemonoDownloader-${{ steps.extract_version.outputs.version }}-arm64.dmg
           rm dist/KemonoDownloader-${{ steps.extract_version.outputs.version }}.dmg
 
       - name: Upload artifacts
-        if: steps.check_commit.outputs.match == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: KemonoDownloader-macos-arm64
@@ -275,6 +291,8 @@ jobs:
           include-hidden-files: true
 
   build-macos-x86_64:
+    needs: check-for-building
+    if: needs.check-for-building.outputs.match == 'true'
     runs-on: macos-13
 
     steps:
@@ -347,27 +365,10 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION"
 
-      - name: Check if commit message matches version
-        id: check_commit
-        shell: bash
-        run: |
-          COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
-          VERSION="v${{ steps.extract_version.outputs.version }}"
-          if [ "$COMMIT_MESSAGE" = "$VERSION" ]; then
-            echo "match=true" >> $GITHUB_OUTPUT
-            echo "Commit message matches the version. Proceeding with build and release."
-          else
-            echo "match=false" >> $GITHUB_OUTPUT
-            echo "Commit message does not match the version. Skipping build and release steps."
-          fi
-          echo "Commit message: $COMMIT_MESSAGE"
-          echo "Expected version: $VERSION"
-          echo "Match: ${{ steps.check_commit.outputs.match }}"
-
       - name: Create commit match indicator file
         shell: bash
         run: |
-          echo "${{ steps.check_commit.outputs.match }}" > commit-match.txt
+          echo "true" > commit-match.txt
 
       - name: Upload commit match indicator
         uses: actions/upload-artifact@v4
@@ -376,7 +377,6 @@ jobs:
           path: commit-match.txt
 
       - name: Build with Briefcase
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           briefcase create
@@ -386,7 +386,6 @@ jobs:
           BRIEFCASE_PLATFORM: macOS
 
       - name: Normalize directory case
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           if [ -d "MacOS" ]; then
@@ -394,7 +393,6 @@ jobs:
           fi
 
       - name: Debug - List output files
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           echo "Listing directories to check case:"
@@ -412,14 +410,12 @@ jobs:
           fi
 
       - name: Rename DMG file
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           cp dist/KemonoDownloader-${{ steps.extract_version.outputs.version }}.dmg dist/M-KemonoDownloader-${{ steps.extract_version.outputs.version }}-x86_64.dmg
           rm dist/KemonoDownloader-${{ steps.extract_version.outputs.version }}.dmg
 
       - name: Upload artifacts
-        if: steps.check_commit.outputs.match == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: KemonoDownloader-macos-x86_64
@@ -427,6 +423,8 @@ jobs:
           include-hidden-files: true
 
   build-ubuntu-deb:
+    needs: check-for-building
+    if: needs.check-for-building.outputs.match == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -489,27 +487,10 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION"
 
-      - name: Check if commit message matches version
-        id: check_commit
-        shell: bash
-        run: |
-          COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
-          VERSION="v${{ steps.extract_version.outputs.version }}"
-          if [ "$COMMIT_MESSAGE" = "$VERSION" ]; then
-            echo "match=true" >> $GITHUB_OUTPUT
-            echo "Commit message matches the version. Proceeding with build and release."
-          else
-            echo "match=false" >> $GITHUB_OUTPUT
-            echo "Commit message does not match the version. Skipping build and release steps."
-          fi
-          echo "Commit message: $COMMIT_MESSAGE"
-          echo "Expected version: $VERSION"
-          echo "Match: ${{ steps.check_commit.outputs.match }}"
-
       - name: Create commit match indicator file
         shell: bash
         run: |
-          echo "${{ steps.check_commit.outputs.match }}" > commit-match.txt
+          echo "true" > commit-match.txt
 
       - name: Upload commit match indicator
         uses: actions/upload-artifact@v4
@@ -518,7 +499,6 @@ jobs:
           path: commit-match.txt
 
       - name: Build with Briefcase in Docker
-        if: steps.check_commit.outputs.match == 'true'
         run: |
           docker run --rm -v $(pwd):/app -w /app ubuntu:noble /bin/bash -c "
             apt-get update &&
@@ -535,7 +515,6 @@ jobs:
           BRIEFCASE_PLATFORM: linux
 
       - name: Normalize directory case
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           if [ -d "Linux" ]; then
@@ -543,7 +522,6 @@ jobs:
           fi
 
       - name: Fix permissions
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           sudo chown -R runner:runner dist
@@ -551,7 +529,6 @@ jobs:
           ls -l dist
 
       - name: Debug - List output files
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           echo "Listing directories to check case:"
@@ -569,14 +546,12 @@ jobs:
           fi
 
       - name: Rename DEB file
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           cp dist/kemonodownloader_${{ steps.extract_version.outputs.version }}-1~ubuntu-noble_amd64.deb dist/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1~ubuntu-noble_amd64.deb
           rm dist/kemonodownloader_${{ steps.extract_version.outputs.version }}-1~ubuntu-noble_amd64.deb
 
       - name: Upload artifacts
-        if: steps.check_commit.outputs.match == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: KemonoDownloader-ubuntu-deb
@@ -584,6 +559,8 @@ jobs:
           include-hidden-files: true
 
   build-ubuntu-rpm:
+    needs: check-for-building
+    if: needs.check-for-building.outputs.match == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -640,33 +617,16 @@ jobs:
           cat pyproject.toml
           VERSION=$(python -c "import toml; print(toml.load('pyproject.toml')['tool']['briefcase']['version'])")
           if [ -z "$VERSION" ]; then
-            echo "Failed to extract version from pyproject.toml!"
+            echo "Failed to extract version from(pyproject.toml!"
             exit 1
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION"
 
-      - name: Check if commit message matches version
-        id: check_commit
-        shell: bash
-        run: |
-          COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
-          VERSION="v${{ steps.extract_version.outputs.version }}"
-          if [ "$COMMIT_MESSAGE" = "$VERSION" ]; then
-            echo "match=true" >> $GITHUB_OUTPUT
-            echo "Commit message matches the version. Proceeding with build and release."
-          else
-            echo "match=false" >> $GITHUB_OUTPUT
-            echo "Commit message does not match the version. Skipping build and release steps."
-          fi
-          echo "Commit message: $COMMIT_MESSAGE"
-          echo "Expected version: $VERSION"
-          echo "Match: ${{ steps.check_commit.outputs.match }}"
-
       - name: Create commit match indicator file
         shell: bash
         run: |
-          echo "${{ steps.check_commit.outputs.match }}" > commit-match.txt
+          echo "true" > commit-match.txt
 
       - name: Upload commit match indicator
         uses: actions/upload-artifact@v4
@@ -675,7 +635,6 @@ jobs:
           path: commit-match.txt
 
       - name: Build with Briefcase in Docker
-        if: steps.check_commit.outputs.match == 'true'
         run: |
           docker run --rm -v $(pwd):/app -w /app fedora:latest /bin/bash -c "
             dnf install -y python3 python3-pip python3-devel gcc qt6-qtbase qt6-qtbase-devel git rpm-build &&
@@ -691,7 +650,6 @@ jobs:
           BRIEFCASE_PLATFORM: linux
 
       - name: Normalize directory case
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           if [ -d "Linux" ]; then
@@ -699,7 +657,6 @@ jobs:
           fi
 
       - name: Fix permissions
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           sudo chown -R runner:runner dist
@@ -707,7 +664,6 @@ jobs:
           ls -l dist
 
       - name: Debug - List output files
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           echo "Listing directories to check case:"
@@ -725,14 +681,12 @@ jobs:
           fi
 
       - name: Rename RPM file
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           cp dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1.fc41.x86_64.rpm dist/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1.fc41.x86_64.rpm
           rm dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1.fc41.x86_64.rpm
 
       - name: Upload artifacts
-        if: steps.check_commit.outputs.match == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: KemonoDownloader-ubuntu-rpm
@@ -740,6 +694,8 @@ jobs:
           include-hidden-files: true
 
   build-ubuntu-pkg:
+    needs: check-for-building
+    if: needs.check-for-building.outputs.match == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -802,27 +758,10 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION"
 
-      - name: Check if commit message matches version
-        id: check_commit
-        shell: bash
-        run: |
-          COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
-          VERSION="v${{ steps.extract_version.outputs.version }}"
-          if [ "$COMMIT_MESSAGE" = "$VERSION" ]; then
-            echo "match=true" >> $GITHUB_OUTPUT
-            echo "Commit message matches the version. Proceeding with build and release."
-          else
-            echo "match=false" >> $GITHUB_OUTPUT
-            echo "Commit message does not match the version. Skipping build and release steps."
-          fi
-          echo "Commit message: $COMMIT_MESSAGE"
-          echo "Expected version: $VERSION"
-          echo "Match: ${{ steps.check_commit.outputs.match }}"
-
       - name: Create commit match indicator file
         shell: bash
         run: |
-          echo "${{ steps.check_commit.outputs.match }}" > commit-match.txt
+          echo "true" > commit-match.txt
 
       - name: Upload commit match indicator
         uses: actions/upload-artifact@v4
@@ -831,7 +770,6 @@ jobs:
           path: commit-match.txt
 
       - name: Build with Briefcase in Docker
-        if: steps.check_commit.outputs.match == 'true'
         run: |
           docker run --rm -v $(pwd):/app -w /app archlinux:latest /bin/bash -c "
             pacman -Syu --noconfirm &&
@@ -854,7 +792,6 @@ jobs:
           BRIEFCASE_PLATFORM: linux
 
       - name: Normalize directory case
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           if [ -d "Linux" ]; then
@@ -862,7 +799,6 @@ jobs:
           fi
 
       - name: Fix permissions
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           sudo chown -R runner:runner dist
@@ -870,7 +806,6 @@ jobs:
           ls -l dist
 
       - name: Debug - List output files
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           echo "Listing directories to check case:"
@@ -888,22 +823,164 @@ jobs:
           fi
 
       - name: Rename PKG file
-        if: steps.check_commit.outputs.match == 'true'
         shell: bash
         run: |
           cp dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1-x86_64.pkg.tar.zst dist/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1-x86_64.pkg.tar.zst
           rm dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1-x86_64.pkg.tar.zst
 
       - name: Upload artifacts
-        if: steps.check_commit.outputs.match == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: KemonoDownloader-ubuntu-pkg
           path: dist/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1-x86_64.pkg.tar.zst
           include-hidden-files: true
 
+  build-windows-portable:
+    needs: check-for-building
+    if: needs.check-for-building.outputs.match == 'true'
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          architecture: 'x64'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller toml
+
+      - name: Check PyInstaller version
+        run: |
+          pyinstaller --version
+
+      - name: Debug - Log commit message
+        run: |
+          echo "Commit message: ${{ github.event.head_commit.message }}"
+
+      - name: Extract version from pyproject.toml
+        id: extract_version
+        shell: bash
+        run: |
+          if [ ! -f "pyproject.toml" ]; then
+            echo "pyproject.toml not found!"
+            exit 1
+          fi
+          echo "Contents of pyproject.toml:"
+          cat pyproject.toml
+          VERSION=$(python -c "import toml; print(toml.load('pyproject.toml')['tool']['briefcase']['version'])")
+          if [ -z "$VERSION" ]; then
+            echo "Failed to extract version from pyproject.toml!"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Create commit match indicator file
+        shell: bash
+        run: |
+          echo "true" > commit-match.txt
+
+      - name: Upload commit match indicator
+        uses: actions/upload-artifact@v4
+        with:
+          name: commit-match-indicator-windows-portable
+          path: commit-match.txt
+
+      - name: Create version file for PyInstaller
+        shell: bash
+        run: |
+          VERSION="${{ steps.extract_version.outputs.version }}"
+          # Replace dots with commas for filevers and prodvers
+          VERSION_COMMA=$(echo "$VERSION" | sed 's/\./, /g')
+          cat > version_info.txt << EOL
+          VSVersionInfo(
+            ffi=FixedFileInfo(
+              filevers=($VERSION_COMMA, 0),
+              prodvers=($VERSION_COMMA, 0),
+              mask=0x3f,
+              flags=0x0,
+              OS=0x40004,
+              fileType=0x1,
+              subtype=0x0,
+              date=(0, 0)
+            ),
+            kids=[
+              StringFileInfo(
+                [
+                  StringTable(
+                    u'040904B0',
+                    [
+                      StringStruct(u'CompanyName', u'VoxDroid - github.com/VoxDroid'),
+                      StringStruct(u'FileDescription', u'Kemono.su Downloader - github.com/VoxDroid/KemonoDownloader'),
+                      StringStruct(u'FileVersion', u'$VERSION'),
+                      StringStruct(u'LegalCopyright', u'Copyright (c) 2025 Izeno'),
+                      StringStruct(u'ProductName', u'Kemono.su Downloader $VERSION'),
+                      StringStruct(u'ProductVersion', u'$VERSION')
+                    ]
+                  )
+                ]
+              ),
+              VarFileInfo([VarStruct(u'Translation', [0x0409, 1200])])
+            ]
+          )
+          EOL
+
+      - name: Build with PyInstaller
+        shell: bash
+        run: |
+          pyinstaller --onefile \
+            --noconsole \
+            --icon "assets/icons/KemonoDownloader.ico" \
+            --add-data "src/kemonodownloader/KemonoDownloader.png;." \
+            --collect-data fake_useragent \
+            --version-file version_info.txt \
+            --distpath dist \
+            --workpath build \
+            --name "KemonoDownloader" \
+            src/kemonodownloader/app.py
+            echo "Listing files in build directory:"
+            find build -type f
+
+      - name: Normalize directory case
+        shell: bash
+        run: |
+          if [ -d "Dist" ]; then
+            mv Dist dist
+          fi
+
+      - name: Rename EXE file
+        id: rename_exe
+        shell: bash
+        run: |
+          cp dist/KemonoDownloader.exe dist/W-KemonoDownloader-${{ steps.extract_version.outputs.version }}-x86_64-Portable.exe
+          rm dist/KemonoDownloader.exe
+
+      - name: Debug - List output files
+        shell: bash
+        run: |
+          echo "Listing directories to check case:"
+          ls -ld dist Dist 2>/dev/null || true
+          echo "Listing output files:"
+          find . -type f | grep -E '\.(exe)$'
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: KemonoDownloader-windows-portable
+          path: dist/W-KemonoDownloader-${{ steps.extract_version.outputs.version }}-x86_64-Portable.exe
+          include-hidden-files: true
+
   release:
-    needs: [build-windows, build-macos-arm64, build-macos-x86_64, build-ubuntu-deb, build-ubuntu-rpm, build-ubuntu-pkg]
+    needs: [build-windows, build-macos-arm64, build-macos-x86_64, build-ubuntu-deb, build-ubuntu-rpm, build-ubuntu-pkg, build-windows-portable]
     runs-on: ubuntu-latest
 
     steps:
@@ -931,7 +1008,7 @@ jobs:
         shell: bash
         run: |
           MATCH=true
-          for job in windows macos-arm64 macos-x86_64 ubuntu-deb ubuntu-rpm ubuntu-pkg; do
+          for job in windows macos-arm64 macos-x86_64 ubuntu-deb ubuntu-rpm ubuntu-pkg windows-portable; do
             FILE="commit-match-artifacts/commit-match-indicator-$job/commit-match.txt"
             if [ -f "$FILE" ]; then
               CONTENT=$(cat "$FILE")
@@ -1007,7 +1084,7 @@ jobs:
         shell: bash
         run: |
           TAG="v${{ steps.extract_version.outputs.version }}"
-          RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.KEMONODOWNLOADER }}" \
             "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG")
           if echo "$RESPONSE" | grep -q '"message": "Not Found"'; then
             echo "exists=false" >> $GITHUB_OUTPUT
@@ -1032,39 +1109,26 @@ jobs:
           echo "Listing downloaded artifacts:"
           find artifacts -type f
 
-      - name: Create Release
+      - name: Create Draft Release
         if: steps.read_commit_match.outputs.commit_match == 'true' && steps.check_release.outputs.exists == 'false'
-        id: create_release
+        id: create_draft_release
         shell: bash
         run: |
           TAG="v${{ steps.extract_version.outputs.version }}"
           RESPONSE=$(curl -s -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: token ${{ secrets.KEMONODOWNLOADER }}" \
             -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/repos/${{ github.repository }}/releases" \
-            -d "{\"tag_name\":\"$TAG\",\"name\":\"Kemono Downloader $TAG\",\"draft\":false,\"prerelease\":false,\"body\":\"\"}")
-          echo "Create release response: $RESPONSE"
+            -d "{\"tag_name\":\"$TAG\",\"name\":\"Kemono Downloader $TAG\",\"draft\":true,\"prerelease\":false,\"body\":\"\"}")
+          echo "Create draft release response: $RESPONSE"
           UPLOAD_URL=$(echo "$RESPONSE" | jq -r '.upload_url' | sed 's/{?name,label}//')
-          if [ -z "$UPLOAD_URL" ]; then
-            echo "Failed to create release. Response: $RESPONSE"
+          RELEASE_ID=$(echo "$RESPONSE" | jq -r '.id')
+          if [ -z "$UPLOAD_URL" ] || [ -z "$RELEASE_ID" ]; then
+            echo "Failed to create draft release. Response: $RESPONSE"
             exit 1
           fi
           echo "upload_url=$UPLOAD_URL" >> $GITHUB_OUTPUT
-
-      - name: Debug - Verify release creation
-        if: steps.read_commit_match.outputs.commit_match == 'true' && steps.check_release.outputs.exists == 'false'
-        shell: bash
-        run: |
-          TAG="v${{ steps.extract_version.outputs.version }}"
-          RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG")
-          if echo "$RESPONSE" | grep -q '"draft": false'; then
-            echo "Release created successfully and is published."
-          else
-            echo "Release creation failed or is not published. Response: $RESPONSE"
-            exit 1
-          fi
-          echo "Release details: $RESPONSE"
+          echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
 
       - name: Upload Windows Release Asset
         if: steps.read_commit_match.outputs.commit_match == 'true' && steps.check_release.outputs.exists == 'false'
@@ -1077,11 +1141,11 @@ jobs:
             exit 1
           fi
           RESPONSE=$(curl -s -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: token ${{ secrets.KEMONODOWNLOADER }}" \
             -H "Accept: application/vnd.github.v3+json" \
             -H "Content-Type: application/x-msi" \
             --data-binary "@$ASSET_PATH" \
-            "${{ steps.create_release.outputs.upload_url }}?name=$ASSET_NAME")
+            "${{ steps.create_draft_release.outputs.upload_url }}?name=$ASSET_NAME")
           echo "Upload asset response: $RESPONSE"
           STATE=$(echo "$RESPONSE" | jq -r '.state')
           if [ "$STATE" = "uploaded" ]; then
@@ -1102,11 +1166,11 @@ jobs:
             exit 1
           fi
           RESPONSE=$(curl -s -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: token ${{ secrets.KEMONODOWNLOADER }}" \
             -H "Accept: application/vnd.github.v3+json" \
             -H "Content-Type: application/x-apple-diskimage" \
             --data-binary "@$ASSET_PATH" \
-            "${{ steps.create_release.outputs.upload_url }}?name=$ASSET_NAME")
+            "${{ steps.create_draft_release.outputs.upload_url }}?name=$ASSET_NAME")
           echo "Upload asset response: $RESPONSE"
           STATE=$(echo "$RESPONSE" | jq -r '.state')
           if [ "$STATE" = "uploaded" ]; then
@@ -1127,11 +1191,11 @@ jobs:
             exit 1
           fi
           RESPONSE=$(curl -s -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: token ${{ secrets.KEMONODOWNLOADER }}" \
             -H "Accept: application/vnd.github.v3+json" \
             -H "Content-Type: application/x-apple-diskimage" \
             --data-binary "@$ASSET_PATH" \
-            "${{ steps.create_release.outputs.upload_url }}?name=$ASSET_NAME")
+            "${{ steps.create_draft_release.outputs.upload_url }}?name=$ASSET_NAME")
           echo "Upload asset response: $RESPONSE"
           STATE=$(echo "$RESPONSE" | jq -r '.state')
           if [ "$STATE" = "uploaded" ]; then
@@ -1152,11 +1216,11 @@ jobs:
             exit 1
           fi
           RESPONSE=$(curl -s -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: token ${{ secrets.KEMONODOWNLOADER }}" \
             -H "Accept: application/vnd.github.v3+json" \
             -H "Content-Type: application/octet-stream" \
             --data-binary "@$ASSET_PATH" \
-            "${{ steps.create_release.outputs.upload_url }}?name=$ASSET_NAME")
+            "${{ steps.create_draft_release.outputs.upload_url }}?name=$ASSET_NAME")
           echo "Upload asset response: $RESPONSE"
           STATE=$(echo "$RESPONSE" | jq -r '.state')
           if [ "$STATE" = "uploaded" ]; then
@@ -1177,11 +1241,11 @@ jobs:
             exit 1
           fi
           RESPONSE=$(curl -s -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: token ${{ secrets.KEMONODOWNLOADER }}" \
             -H "Accept: application/vnd.github.v3+json" \
             -H "Content-Type: application/octet-stream" \
             --data-binary "@$ASSET_PATH" \
-            "${{ steps.create_release.outputs.upload_url }}?name=$ASSET_NAME")
+            "${{ steps.create_draft_release.outputs.upload_url }}?name=$ASSET_NAME")
           echo "Upload asset response: $RESPONSE"
           STATE=$(echo "$RESPONSE" | jq -r '.state')
           if [ "$STATE" = "uploaded" ]; then
@@ -1202,11 +1266,11 @@ jobs:
             exit 1
           fi
           RESPONSE=$(curl -s -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Authorization: token ${{ secrets.KEMONODOWNLOADER }}" \
             -H "Accept: application/vnd.github.v3+json" \
             -H "Content-Type: application/octet-stream" \
             --data-binary "@$ASSET_PATH" \
-            "${{ steps.create_release.outputs.upload_url }}?name=$ASSET_NAME")
+            "${{ steps.create_draft_release.outputs.upload_url }}?name=$ASSET_NAME")
           echo "Upload asset response: $RESPONSE"
           STATE=$(echo "$RESPONSE" | jq -r '.state')
           if [ "$STATE" = "uploaded" ]; then
@@ -1215,3 +1279,61 @@ jobs:
             echo "Failed to upload asset. Response: $RESPONSE"
             exit 1
           fi
+
+      - name: Upload Windows Portable Release Asset
+        if: steps.read_commit_match.outputs.commit_match == 'true' && steps.check_release.outputs.exists == 'false'
+        shell: bash
+        run: |
+          ASSET_PATH="artifacts/KemonoDownloader-windows-portable/W-KemonoDownloader-${{ steps.extract_version.outputs.version }}-x86_64-Portable.exe"
+          ASSET_NAME="W-KemonoDownloader-${{ steps.extract_version.outputs.version }}-x86_64-Portable.exe"
+          if [ ! -f "$ASSET_PATH" ]; then
+            echo "Asset file not found at $ASSET_PATH"
+            exit 1
+          fi
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: token ${{ secrets.KEMONODOWNLOADER }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary "@$ASSET_PATH" \
+            "${{ steps.create_draft_release.outputs.upload_url }}?name=$ASSET_NAME")
+          echo "Upload asset response: $RESPONSE"
+          STATE=$(echo "$RESPONSE" | jq -r '.state')
+          if [ "$STATE" = "uploaded" ]; then
+            echo "Asset uploaded successfully."
+          else
+            echo "Failed to upload asset. Response: $RESPONSE"
+            exit 1
+          fi
+
+      - name: Publish Release
+        if: steps.read_commit_match.outputs.commit_match == 'true' && steps.check_release.outputs.exists == 'false'
+        shell: bash
+        run: |
+          RELEASE_ID="${{ steps.create_draft_release.outputs.release_id }}"
+          RESPONSE=$(curl -s -X PATCH \
+            -H "Authorization: token ${{ secrets.KEMONODOWNLOADER }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/$RELEASE_ID" \
+            -d '{"draft": false}')
+          echo "Publish release response: $RESPONSE"
+          if echo "$RESPONSE" | grep -q '"draft": false'; then
+            echo "Release published successfully."
+          else
+            echo "Failed to publish release. Response: $RESPONSE"
+            exit 1
+          fi
+
+      - name: Debug - Verify release publication
+        if: steps.read_commit_match.outputs.commit_match == 'true' && steps.check_release.outputs.exists == 'false'
+        shell: bash
+        run: |
+          TAG="v${{ steps.extract_version.outputs.version }}"
+          RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.KEMONODOWNLOADER }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG")
+          if echo "$RESPONSE" | grep -q '"draft": false'; then
+            echo "Release is published with all assets."
+          else
+            echo "Release publication failed or is still a draft. Response: $RESPONSE"
+            exit 1
+          fi
+          echo "Release details: $RESPONSE"
