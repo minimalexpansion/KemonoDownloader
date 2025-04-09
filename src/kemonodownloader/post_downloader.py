@@ -1672,42 +1672,39 @@ class PostDownloaderTab(QWidget):
         self.background_task_label.setText(translate("idle"))
 
     def toggle_check_all(self, state):
-        is_checked = state == 2
+        is_checked = state == 2  # Qt.CheckState.Checked
         new_state = Qt.CheckState.Checked if is_checked else Qt.CheckState.Unchecked
         
-        if self.current_post_url and self.current_post_url in self.all_files_map:
-            current_post_id = self.all_files_map[self.current_post_url][0][1]
-            parts = self.current_post_url.split('/')
-            service, creator_id = parts[-5], parts[-3]
-            api_url = f"{API_BASE}/{service}/user/{creator_id}/post/{current_post_id}"
-            try:
-                response = requests.get(api_url, headers=HEADERS)
-                if response.status_code == 200:
-                    post_data = response.json()
-                    post = post_data if isinstance(post_data, dict) and 'post' not in post_data else post_data.get('post', {})
-                    allowed_extensions = [ext.lower() for ext, check in self.post_filter_checks.items() if check.isChecked()]
-                    current_files = self.detect_files(post, allowed_extensions)
-                    current_file_urls = [file_url for _, file_url in current_files]
-                    
-                    for file_url in self.checked_urls:
-                        if file_url in current_file_urls:
-                            self.checked_urls[file_url] = (new_state == Qt.CheckState.Checked)
-            
-            except Exception as e:
-                self.append_log_to_console(translate("log_error", f"Error fetching post data for Check ALL: {str(e)}"), "ERROR")
-
+        # Collect only visible items from the filtered list
+        visible_urls = []
+        for i in range(self.post_file_list.count()):
+            item = self.post_file_list.item(i)
+            if not item.isHidden():
+                file_url = item.data(Qt.UserRole)
+                visible_urls.append(file_url)
+        
+        if not visible_urls:
+            self.append_log_to_console(translate("log_warning", "No visible files to toggle."), "WARNING")
+            return
+        
+        # Update checked_urls only for visible items
+        for file_url in self.checked_urls:
+            if file_url in visible_urls:
+                self.checked_urls[file_url] = (new_state == Qt.CheckState.Checked)
+        
+        # Update the UI for visible items
         for i in range(self.post_file_list.count()):
             item = self.post_file_list.item(i)
             if not item.isHidden():
                 widget = self.post_file_list.itemWidget(item)
                 file_url = item.data(Qt.UserRole)
-                if widget and hasattr(self, 'current_file_urls') and file_url in current_file_urls:
+                if widget and file_url in visible_urls:
                     widget.check_box.blockSignals(True)
                     widget.check_box.setCheckState(new_state)
                     widget.check_box.blockSignals(False)
         
         self.update_checked_files()
-        self.append_log_to_console(translate("log_debug", f"Check ALL state updated to {is_checked} for current post"), "INFO")
+        self.append_log_to_console(translate("log_debug", f"Check ALL toggled to {is_checked} for {len(visible_urls)} visible files"), "INFO")
 
     def toggle_download_all_links(self, state):
         is_checked = state == 2
@@ -1731,7 +1728,17 @@ class PostDownloaderTab(QWidget):
             self.append_log_to_console(translate("log_info", translate("download_all_disabled")), "INFO")
 
     def update_checked_files(self):
-        self.files_to_download = [file_url for file_url, is_checked in self.checked_urls.items() if is_checked]
+        # Update files_to_download based on checked_urls, considering only visible items if filtered
+        visible_urls = {item.data(Qt.UserRole) for i in range(self.post_file_list.count()) 
+                    for item in [self.post_file_list.item(i)] if not item.isHidden()}
+        
+        if visible_urls:  # If there are visible items, only include checked files from those
+            self.files_to_download = [file_url for file_url in visible_urls 
+                                    if self.checked_urls.get(file_url, False)]
+        else:  # If no filtering, include all checked files
+            self.files_to_download = [file_url for file_url, is_checked in self.checked_urls.items() 
+                                    if is_checked]
+        
         self.post_file_count_label.setText(translate("files_count", len(self.files_to_download)))
         self.append_log_to_console(
             translate("log_debug", f"Updated checked files count: {len(self.files_to_download)}, checked_urls: {len(self.checked_urls)}"),
@@ -1742,17 +1749,21 @@ class PostDownloaderTab(QWidget):
         search_text = self.post_search_input.text().lower()
         active_filters = [ext.lower() for ext, check in self.post_filter_checks.items() if check.isChecked()]
         
+        # Preserve current checked states of visible items
         current_states = {item.data(Qt.UserRole): self.checked_urls.get(item.data(Qt.UserRole), True)
-                         for i in range(self.post_file_list.count())
-                         for item in [self.post_file_list.item(i)] if not item.isHidden()}
+                        for i in range(self.post_file_list.count())
+                        for item in [self.post_file_list.item(i)] if not item.isHidden()}
         
         self.post_file_list.clear()
         self.previous_selected_widget = None
+        
+        # Add items matching search and filter criteria
         for file_name, file_url in self.all_detected_files:
             file_ext = os.path.splitext(file_name)[1].lower()
-            if (not search_text or search_text in file_name.lower()) and (not active_filters or file_ext in active_filters):
+            if (not search_text or search_text in file_name.lower()) and (not active_filters or file_ext in active_filters or (file_ext == '.jpeg' and '.jpg' in active_filters)):
                 self.add_list_item(file_name, file_url)
-
+        
+        # Restore checked states for visible items
         for i in range(self.post_file_list.count()):
             item = self.post_file_list.item(i)
             if not item.isHidden():
@@ -1765,8 +1776,9 @@ class PostDownloaderTab(QWidget):
                     self.checked_urls[file_url] = current_states[file_url]
                 if self.download_all_links.isChecked():
                     widget.check_box.setEnabled(False)
-
+        
         self.update_check_all_state()
+        self.update_checked_files()  
 
     def add_list_item(self, text, url):
         item = QListWidgetItem()

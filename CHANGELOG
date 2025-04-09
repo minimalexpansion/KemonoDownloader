@@ -1,5 +1,13 @@
 # Kemono Downloader Release Notes
 
+
+
+## v3.6.0 (09 Apr 2025)
+**fix: ResourceWarnings and Select All in Downloader Tabs**
+- Fixed `ResourceWarning` in `creator_downloader.py` with `with` statements for file hashing.
+- Updated `CreatorDownloaderTab` to toggle "Select All" only for visible posts.
+- Updated `PostDownloaderTab` to toggle "Select All" only for visible files.
+
 ## v3.5.0 (07 Apr 2025)
 **Added**
 * Dynamic `Accept-Language` header based on the user's system language, supporting Windows, Linux, and macOS.

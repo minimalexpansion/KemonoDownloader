@@ -525,7 +525,9 @@ class CreatorDownloadThread(QThread):
             if hash_key == url_hash:
                 existing_path = self.file_hashes[hash_key]["file_path"]
                 if os.path.exists(existing_path):
-                    file_hash = hashlib.md5(open(existing_path, 'rb').read()).hexdigest()
+                    # Use 'with' to ensure the file is closed
+                    with open(existing_path, 'rb') as f:
+                        file_hash = hashlib.md5(f.read()).hexdigest()
                     stored_hash = self.file_hashes[hash_key]["file_hash"]
                     if file_hash == stored_hash:
                         self.log.emit(translate("log_info", translate("file_already_downloaded", filename, existing_path)), "INFO")
@@ -535,6 +537,7 @@ class CreatorDownloadThread(QThread):
                         self.check_post_completion(file_url)
                         return
 
+        # Rest of the download logic remains unchanged
         self.log.emit(translate("log_info", translate("starting_download", file_index + 1, total_files, file_url, post_folder)), "INFO")
         try:
             response = requests.get(file_url, headers=HEADERS, stream=True)
@@ -555,7 +558,8 @@ class CreatorDownloadThread(QThread):
                         if progress == 100:
                             self.file_completed.emit(file_index, file_url)
 
-            file_hash = hashlib.md5(open(full_path, 'rb').read()).hexdigest()
+            with open(full_path, 'rb') as f:
+                file_hash = hashlib.md5(f.read()).hexdigest()
             self.file_hashes[url_hash] = {
                 "file_path": full_path,
                 "file_hash": file_hash,
@@ -652,9 +656,9 @@ class CheckboxToggleThread(QThread):
     finished = pyqtSignal(dict, list)
     log = pyqtSignal(str, str)
 
-    def __init__(self, all_detected_posts, checked_urls, check_all_state):
+    def __init__(self, visible_posts, checked_urls, check_all_state):
         super().__init__()
-        self.all_detected_posts = all_detected_posts
+        self.visible_posts = visible_posts  # Use visible posts instead of all_detected_posts
         self.checked_urls = checked_urls.copy()
         self.check_all_state = check_all_state
         self.is_running = True
@@ -665,12 +669,18 @@ class CheckboxToggleThread(QThread):
     def run(self):
         if not self.is_running:
             return
-        is_checked = self.check_all_state == 2
+        is_checked = self.check_all_state == 2  # Qt.CheckState.Checked
         new_state = Qt.CheckState.Checked if is_checked else Qt.CheckState.Unchecked
-        for post_title, (post_id, _) in self.all_detected_posts:
+        
+        # Only update checked_urls for posts that are currently visible
+        affected_post_ids = set()
+        for post_title, (post_id, _) in self.visible_posts:
             self.checked_urls[post_id] = (new_state == Qt.CheckState.Checked)
+            affected_post_ids.add(post_id)
+        
+        # Update posts_to_download based on all checked posts, not just visible ones
         posts_to_download = [post_id for post_id, checked in self.checked_urls.items() if checked]
-        self.log.emit(translate("log_debug", f"Checkbox toggle completed: Check ALL = {is_checked}, Updated posts: {len(posts_to_download)}"), "INFO")
+        self.log.emit(translate("log_debug", f"Checkbox toggle completed: Check ALL = {is_checked}, Affected posts: {len(affected_post_ids)}, Total checked: {len(posts_to_download)}"), "INFO")
         self.finished.emit(self.checked_urls, posts_to_download)
 
 class CreatorDownloaderTab(QWidget):
@@ -1232,7 +1242,8 @@ class CreatorDownloaderTab(QWidget):
             self.background_task_progress.setRange(0, 100)
             self.background_task_progress.setValue(0)
             self.background_task_label.setText(translate("idle"))
-            self.creator_download_finished()
+            # If no posts, proceed to next creator or finish without starting a thread
+            self.process_next_creator(urls[1:] if len(urls) > 1 else [])
             return
 
         self.file_preparation_thread = FilePreparationThread(
@@ -1254,9 +1265,9 @@ class CreatorDownloaderTab(QWidget):
 
     def cleanup_file_preparation_thread(self):
         """Clean up the file preparation thread after it finishes."""
-        if self.file_preparation_thread in self.active_threads:
+        if self.file_preparation_thread is not None and self.file_preparation_thread in self.active_threads:
             self.active_threads.remove(self.file_preparation_thread)
-        self.file_preparation_thread.deleteLater()
+            self.file_preparation_thread.deleteLater()
         self.file_preparation_thread = None
 
     def update_background_progress(self, value):
@@ -1284,8 +1295,8 @@ class CreatorDownloaderTab(QWidget):
         )
         max_concurrent = self.parent.settings_tab.get_simultaneous_downloads()
         thread = CreatorDownloadThread(service, creator_id, self.parent.download_folder, 
-                                      self.posts_to_download, files_to_download, files_to_posts_map, 
-                                      self.creator_console, self.other_files_dir, max_concurrent)
+                                    self.posts_to_download, files_to_download, files_to_posts_map, 
+                                    self.creator_console, self.other_files_dir, max_concurrent)
         thread.file_progress.connect(self.update_creator_file_progress)
         thread.file_completed.connect(self.update_file_completion)
         thread.post_completed.connect(self.update_post_completion)
@@ -1300,6 +1311,7 @@ class CreatorDownloaderTab(QWidget):
         self.background_task_progress.setRange(0, 100)
         self.background_task_progress.setValue(0)
         self.background_task_label.setText(translate("idle"))
+        self.cleanup_file_preparation_thread()
         self.creator_download_finished()
 
     def process_next_creator(self, remaining_urls):
@@ -1311,7 +1323,7 @@ class CreatorDownloaderTab(QWidget):
         new_remaining_urls = remaining_urls[1:]
         self.append_log_to_console(translate("log_info", f"Moving to next creator: {url}"), "INFO")
         self.completed_files.clear()
-        self.completed_posts.clear()  
+        self.completed_posts.clear()
         self.prepare_files_for_download([url] + new_remaining_urls)
 
     def cleanup_thread(self, thread, remaining_urls):
@@ -1424,9 +1436,24 @@ class CreatorDownloaderTab(QWidget):
         if hasattr(self, 'checkbox_toggle_thread') and self.checkbox_toggle_thread is not None and self.checkbox_toggle_thread.isRunning():
             self.append_log_to_console(translate("log_warning", "Checkbox toggle already in progress. Please wait."), "WARNING")
             return
+        
+        # Get the currently visible posts from creator_post_list
+        visible_posts = []
+        for i in range(self.creator_post_list.count()):
+            item = self.creator_post_list.item(i)
+            if not item.isHidden():  # Only include visible items
+                post_title = self.creator_post_list.itemWidget(item).label.text()
+                post_id, thumbnail_url = self.post_url_map.get(post_title, (None, None))
+                if post_id:
+                    visible_posts.append((post_title, (post_id, thumbnail_url)))
+
+        if not visible_posts:
+            self.append_log_to_console(translate("log_warning", "No visible posts to toggle."), "WARNING")
+            return
+
         self.background_task_label.setText(translate("updating_checkboxes"))
         self.background_task_progress.setRange(0, 0)
-        self.checkbox_toggle_thread = CheckboxToggleThread(self.all_detected_posts, self.checked_urls, state)
+        self.checkbox_toggle_thread = CheckboxToggleThread(visible_posts, self.checked_urls, state)
         self.checkbox_toggle_thread.finished.connect(self.on_toggle_check_all_finished)
         self.checkbox_toggle_thread.log.connect(self.append_log_to_console)
         self.checkbox_toggle_thread.finished.connect(self.cleanup_checkbox_toggle_thread)
@@ -1447,7 +1474,8 @@ class CreatorDownloaderTab(QWidget):
         self.background_task_progress.setRange(0, 100)
         self.background_task_progress.setValue(0)
         self.background_task_label.setText(translate("idle"))
-        self.append_log_to_console(translate("log_debug", f"Check ALL toggle finished, checked posts: {len(self.posts_to_download)}"), "INFO")
+        visible_count = sum(1 for i in range(self.creator_post_list.count()) if not self.creator_post_list.item(i).isHidden())
+        self.append_log_to_console(translate("log_debug", f"Check ALL toggle finished, checked posts: {len(self.posts_to_download)}, visible posts: {visible_count}"), "INFO")
 
     def toggle_download_all_links(self, state):
         self.background_task_label.setText(translate("updating_download_mode"))
