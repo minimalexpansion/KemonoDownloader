@@ -940,7 +940,7 @@ jobs:
           pyinstaller --onefile \
             --noconsole \
             --icon "assets/icons/KemonoDownloader.ico" \
-            --add-data "src/kemonodownloader/KemonoDownloader.png;." \
+            --add-data "src/kemonodownloader/resources/KemonoDownloader.png;resources/" \
             --collect-data fake_useragent \
             --version-file version_info.txt \
             --distpath dist \

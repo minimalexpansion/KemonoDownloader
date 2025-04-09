@@ -39,7 +39,6 @@ test_requires = [
 [tool.briefcase.app.kemonodownloader.macOS]
 universal_build = true
 requires = [
-    "std-nslog~=1.0.3",
 ]
 
 
@@ -52,26 +51,6 @@ system_requires = [
 ]
 
 system_runtime_requires = [
-    # Derived from https://doc.qt.io/qt-6/linux-requirements.html
-    "libxext6",
-    "libxrender1",
-    "libx11-xcb1",
-    "libxkbcommon-x11-0",
-    "libxcb-image0",
-    "libxcb-cursor0",
-    "libxcb-shape0",
-    "libxcb-randr0",
-    "libxcb-xfixes0",
-    "libxcb-sync1",
-    "libxcb-icccm4",
-    "libxcb-keysyms1",
-    "libfontconfig1",
-    "libsm6",
-    "libice6",
-    "libglib2.0-0",
-    "libgl1",
-    "libegl1",
-    "libdbus-1-3",
 ]
 
 [tool.briefcase.app.kemonodownloader.linux.system.rhel]
@@ -79,7 +58,6 @@ system_requires = [
 ]
 
 system_runtime_requires = [
-    "qt6-qtbase-gui",
 ]
 
 [tool.briefcase.app.kemonodownloader.linux.system.suse]
@@ -87,8 +65,6 @@ system_requires = [
 ]
 
 system_runtime_requires = [
-    "libgthread-2_0-0",
-    "libQt6Gui6",
 ]
 
 [tool.briefcase.app.kemonodownloader.linux.system.arch]
@@ -96,14 +72,12 @@ system_requires = [
 ]
 
 system_runtime_requires = [
-    "qt6-base",
 ]
 
 [tool.briefcase.app.kemonodownloader.linux.appimage]
 manylinux = "manylinux_2_28"
 
 system_requires = [
-# ?? FIXME
 ]
 
 linuxdeploy_plugins = [

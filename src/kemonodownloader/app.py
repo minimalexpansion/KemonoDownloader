@@ -166,7 +166,7 @@ class KemonoDownloader(QMainWindow):
         self.other_files_folder = os.path.join(self.base_folder, "Other Files")
         self.ensure_folders_exist()
 
-        self.setWindowIcon(QIcon(resource_path("KemonoDownloader.png")))
+        self.setWindowIcon(QIcon(resource_path("resources/KemonoDownloader.png")))
 
         self.intro_screen = IntroScreen(self)
         self.main_widget = None

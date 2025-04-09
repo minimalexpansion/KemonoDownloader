@@ -48,7 +48,6 @@ HEADERS = {
     "Connection": "keep-alive",
     "Upgrade-Insecure-Requests": "1"
 }
-print(HEADERS)
 API_BASE = "https://kemono.su/api/v1"
 
 class PreviewThread(QThread):

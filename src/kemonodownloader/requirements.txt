@@ -1,8 +1,0 @@
-pyqt6
-bs4
-qtawesome
-requests
-packaging
-pillow
-briefcase
-fake-useragent

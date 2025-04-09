@@ -1,313 +1,635 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kemono Downloader</title>
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="assets/icons/KemonoDownloader.ico">
-    <!-- Bootstrap CSS for responsive layout -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Animate.css for animations -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-    <!-- Google Fonts: Poppins -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-    <!-- Highlight.js for code syntax highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css">
-    <!-- Custom CSS for styling -->
-    <link rel="stylesheet" href="assets/css/index.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kemono Downloader</title>
+<!-- Favicon -->
+<link rel="icon" type="image/x-icon" href="assets/icons/KemonoDownloader.ico">
+<!-- Bootstrap CSS for responsive layout -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<!-- Animate.css for animations -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+<!-- Google Fonts: Poppins -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<!-- Highlight.js for code syntax highlighting -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css">
+<!-- AOS - Animate On Scroll Library -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" />
+<!-- Custom CSS -->
+<link rel="stylesheet" href="assets/css/index.css">
+<!-- Language Selector CSS -->
+<link rel="stylesheet" href="assets/css/language-selector.css">
 </head>
 <body>
-    <!-- Header Section -->
-    <header>
-        <img src="assets/img/KemonoDownloader.png" alt="Kemono Downloader" class="app-image">
-        <h1>Kemono Downloader</h1>
-        <p>A cross-platform Python app built with PyQt6 to download content from Kemono.su</p>
-        <div class="d-flex flex-column align-items-center mt-2">
-            <a href="https://github.com/VoxDroid/KemonoDownloader" target="_blank" class="btn btn-custom">
-                <i class="fab fa-github"></i> GitHub Repository
-            </a>
-            <p align="center" style="margin-top: 10px;">
-                <a href="https://ko-fi.com/O4O6LO7Q1" target="_blank">
-                    <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="ko-fi" style="border: 0; background-color: #30363d; filter: brightness(1.2); padding: 5px; border-radius: 5px;">
-                </a>
-            </p>
-        </div>
-    </header>
-
-    <!-- Overview Section -->
-    <section class="bg-light-section">
-        <div class="container">
-            <h2 class="text-center">Overview</h2>
-            <p class="lead text-center">Kemono Downloader is a versatile Python-based desktop application built with PyQt6, designed to download content from <a href="https://kemono.su" target="_blank">Kemono.su</a>. This tool enables users to archive individual posts or entire creator profiles from services like Patreon, Fanbox, and more, supporting a wide range of file types with customizable settings and advanced features.</p>
-        </div>
-    </section>
-
-    <!-- Features Section -->
-    <section class="bg-dark-section text-white">
-        <div class="container">
-            <h2 class="text-center">Features</h2>
-            <div class="row features-row">
-                <div class="col-md-4">
-                    <div class="card h-100 text-center p-4">
-                        <i class="fas fa-download"></i>
-                        <div class="card-body">
-                            <h5 class="card-title">Post Downloading</h5>
-                            <p class="card-text">Easily download files from specific Kemono.su posts using their URLs.</p>
+<!-- Header Section -->
+<header>
+    <div class="animated-bg">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+    <img src="assets/img/KemonoDownloader.png" alt="Kemono Downloader" class="app-image floating-element">
+    <h1 class="glow-text" data-i18n="appTitle">Kemono Downloader</h1>
+    <p data-i18n="appDescription">A cross-platform Python app built with PyQt6 to download content from Kemono.su</p>
+    
+    <!-- Language Selector -->
+    <div class="language-selector">
+        <div class="dropdown">
+            <button class="btn btn-language dropdown-toggle" type="button" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-globe globe-icon"></i> <span id="current-language">Language</span>
+            </button>
+            <ul class="dropdown-menu language-dropdown-menu" aria-labelledby="languageDropdown">
+                <li>
+                    <a class="dropdown-item language-dropdown-item" href="#" onclick="window.i18n.setLanguage('en')">
+                        <div class="language-flag">
+                            <svg viewBox="0 0 640 480" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="640" height="480" fill="#012169"/>
+                                <path d="M75 0l244 181L562 0h78v62L400 241l240 178v61h-80L320 301 81 480H0v-60l239-178L0 64V0h75z" fill="#FFF"/>
+                                <path d="M424 281l216 159v40L369 281h55zm-184 20l6 35L54 480H0l240-179zM640 0v3L391 191l2-44L590 0h50zM0 0l239 176h-60L0 42V0z" fill="#C8102E"/>
+                                <path d="M241 0v480h160V0H241zM0 160v160h640V160H0z" fill="#FFF"/>
+                                <path d="M0 193v96h640v-96H0zM273 0v480h96V0h-96z" fill="#C8102E"/>
+                            </svg>
                         </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card h-100 text-center p-4">
-                        <i class="fas fa-users"></i>
-                        <div class="card-body">
-                            <h5 class="card-title">Creator Archiving</h5>
-                            <p class="card-text">Bulk download all posts and files from a creator's profile with a single click.</p>
+                        <span class="language-name" data-i18n="english">English</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item language-dropdown-item" href="#" onclick="window.i18n.setLanguage('ja')">
+                        <div class="language-flag">
+                            <svg viewBox="0 0 640 480" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="640" height="480" fill="#fff"/>
+                                <circle cx="320" cy="240" r="100" fill="#bc002d"/>
+                            </svg>
                         </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card h-100 text-center p-4">
-                        <i class="fas fa-cogs"></i>
-                        <div class="card-body">
-                            <h5 class="card-title">Concurrent Downloads</h5>
-                            <p class="card-text">Adjust the number of simultaneous downloads (1-10) for optimal performance.</p>
+                        <span class="language-name" data-i18n="japanese">Japanese</span>
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item language-dropdown-item" href="#" onclick="window.i18n.setLanguage('ko')">
+                        <div class="language-flag">
+                            <svg viewBox="0 0 640 480" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="640" height="480" fill="#fff"/>
+                                <g transform="translate(320 240)">
+                                    <circle r="120" fill="#fff"/>
+                                    <path d="M0-75a75 75 0 0 1 0 150 75 75 0 0 1 0-150" fill="#c60c30"/>
+                                    <path d="M-45-45a75 75 0 0 0 0 90 75 75 0 0 1 90 0 75 75 0 0 0 0-90 75 75 0 0 1-90 0" fill="#003478"/>
+                                </g>
+                                <g transform="rotate(45)">
+                                    <g id="b">
+                                        <path id="a" d="M-50-130h15v260h-15z" transform="rotate(90)"/>
+                                        <use xlink:href="#a" transform="rotate(45)"/>
+                                    </g>
+                                    <use xlink:href="#b" transform="rotate(90)"/>
+                                </g>
+                            </svg>
                         </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row features-row">
-                <div class="col-md-4">
-                    <div class="card h-100 text-center p-4">
-                        <i class="fas fa-shield-alt"></i>
-                        <div class="card-body">
-                            <h5 class="card-title">File Deduplication</h5>
-                            <p class="card-text">Prevent redundant downloads using URL hashes.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card h-100 text-center p-4">
-                        <i class="fas fa-image"></i>
-                        <div class="card-body">
-                            <h5 class="card-title">Image Previews</h5>
-                            <p class="card-text">Preview images before downloading to verify content.</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card h-100 text-center p-4">
-                        <i class="fas fa-sliders-h"></i>
-                        <div class="card-body">
-                            <h5 class="card-title">Customizable Settings</h5>
-                            <p class="card-text">Tailor save directories, folder names, notifications, and themes to your preference.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Installation Section -->
-    <section class="bg-light-section">
-        <div class="container">
-            <h2 class="text-center">Installation</h2>
-            <div class="accordion" id="installationAccordion">
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="headingOne">
-                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                            <i class="fas fa-code me-2"></i> Running the Python Source (All Platforms)
-                        </button>
-                    </h2>
-                    <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#installationAccordion">
-                        <div class="accordion-body">
-                            <ol>
-                                <li>Ensure you have <strong>Python 3.9+</strong> installed on your system (Windows, macOS, Linux).</li>
-                                <li>Clone this repository:<br><pre><code class="language-bash">git clone https://github.com/VoxDroid/KemonoDownloader.git
-cd KemonoDownloader</code></pre></li>
-                                <li>Install the required dependencies (see <a href="#dependencies">Dependencies</a> below):<br><pre><code class="bash">pip install -r requirements.txt</code></pre></li>
-                                <li>Run the application:<br><pre><code class="bash">python main.py</code></pre></li>
-                                <p><em>Note</em>: An internet connection is required to fetch content from Kemono.su.</p>
-                            </ol>
-                        </div>
-                    </div>
-                </div>
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="headingTwo">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                            <i class="fab fa-windows me-2"></i> Optional Windows Executable (For Non-Programmers)
-                        </button>
-                    </h2>
-                    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#installationAccordion">
-                        <div class="accordion-body">
-                            <ul>
-                                <li>A pre-compiled Windows <code>.exe</code> is available for users who prefer not to set up Python.</li>
-                                <li>Download the latest version from the <a href="https://github.com/VoxDroid/KemonoDownloader/releases" target="_blank">Releases page</a>.</li>
-                                <li>Run the <code>.exe</code> file to launch the application—no additional setup needed.</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Usage Section -->
-    <section class="bg-dark-section text-white">
-        <div class="container">
-            <h2 class="text-center">Usage</h2>
-            <p class="lead text-center">Upon launching, you’ll see an introductory screen with a "Launch" button. Click it to enter the main interface, featuring four tabs: <strong>Post Downloader</strong>, <strong>Creator Downloader</strong>, <strong>Settings</strong>, and <strong>Help</strong>. The in-app Help tab contains a comprehensive user manual.</p>
-            <div class="row mt-4">
-                <div class="col-md-6">
-                    <h4><i class="fas fa-play"></i> Getting Started</h4>
-                    <ul>
-                        <li>The application creates default directories (<code>Downloads</code>, <code>Cache</code>, <code>Other Files</code>) in the specified save location.</li>
-                        <li>Ensure an active internet connection to access Kemono.su content.</li>
-                        <li>Explore the Help tab for detailed instructions and troubleshooting tips.</li>
-                    </ul>
-                </div>
-                <div class="col-md-6">
-                    <h4><i class="fas fa-download"></i> Post Downloader Tab</h4>
-                    <ol>
-                        <li>Enter a post URL (e.g., <code>https://kemono.su/patreon/user/123456789/post/123456789</code>) in the "Enter post URL" field.</li>
-                        <li>Click "Add to Queue" to add it to the list.</li>
-                        <li>Click the eye icon to view files, filter by type (e.g., JPG, ZIP), and select files to download.</li>
-                        <li>Click "Download" to start, and monitor progress with the progress bars and console.</li>
-                    </ol>
-                </div>
-                <div class="col-md-6">
-                    <h4><i class="fas fa-users"></i> Creator Downloader Tab</h4>
-                    <ol>
-                        <li>Enter a creator URL (e.g., <code>https://kemono.su/patreon/user/123456789</code>) in the "Enter creator URL" field.</li>
-                        <li>Click "Add to Queue" to add it to the list.</li>
-                        <li>Click the eye icon to fetch posts, configure options (Main File, Attachments, Content Images), and select posts.</li>
-                        <li>Click "Download" to begin, and track progress via the interface.</li>
-                    </ol>
-                </div>
-                <div class="col-md-6">
-                    <h4><i class="fas fa-cogs"></i> Settings Tab</h4>
-                    <ol>
-                        <li>Set the folder name and save directory for downloads.</li>
-                        <li>Adjust simultaneous downloads (1-10) using the slider or spinbox.</li>
-                        <li>Click "Apply Changes" to save.</li>
-                    </ol>
-                </div>
-                <div class="col-md-12 text-center">
-                    <h4><i class="fas fa-question-circle"></i> Help Tab</h4>
-                    <p>Navigate to the Help tab to read detailed guides, examples, and support information.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Screenshots Section -->
-    <section class="bg-light-section">
-        <div class="container">
-            <h2 class="text-center">Screenshots</h2>
-            <div class="row justify-content-center">
-                <div class="col-md-4 mb-3">
-                    <img src="assets/previews/kd_pdown.png" alt="Post Downloader Tab" class="img-fluid screenshot-img" onclick="showImageOverlay('assets/previews/kd_pdown.png')">
-                    <p class="text-center mt-2"><strong>Post Downloader Tab</strong></p>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <img src="assets/previews/kd_cdown.png" alt="Creator Downloader Tab" class="img-fluid screenshot-img" onclick="showImageOverlay('assets/previews/kd_cdown.png')">
-                    <p class="text-center mt-2"><strong>Creator Downloader Tab</strong></p>
-                </div>
-                <div class="col-md-4 mb-3">
-                    <img src="assets/previews/kd_settings.png" alt="Settings Tab" class="img-fluid screenshot-img" onclick="showImageOverlay('assets/previews/kd_settings.png')">
-                    <p class="text-center mt-2"><strong>Settings Tab</strong></p>
-                </div>
-            </div>
-            <!-- Floating Image Overlay -->
-            <div class="image-overlay" id="imageOverlay">
-                <button class="close-btn" id="closeOverlayBtn"><i class="fas fa-times"></i></button>
-                <img id="overlayImage" src="" alt="Screenshot">
-            </div>
-        </div>
-    </section>
-
-    <!-- Releases & Support Section -->
-    <section class="bg-dark-section text-white">
-        <div class="container">
-            <h2 class="text-center">Releases & Support</h2>
-            <div class="row">
-                <div class="col-md-6">
-                    <h4><i class="fas fa-download"></i> Releases</h4>
-                    <p>Optional Windows executables are available in the <a href="https://github.com/VoxDroid/KemonoDownloader/releases" target="_blank">Releases section</a> for non-programmers. Check release notes for details on new features, bug fixes, and version updates. The Python source remains the primary method, supporting all platforms with proper setup.</p>
-                </div>
-                <div class="col-md-6">
-                    <h4><i class="fas fa-heart"></i> Support</h4>
-                    <p>
-                        If you enjoy this project or want to support its development, consider these options:
-                        <ul>
-                            <li><a href="https://ko-fi.com/izeno" target="_blank">Ko-fi</a>: Buy me a coffee to fuel further development!</li>
-                            <li><a href="https://github.com/VoxDroid/KemonoDownloader/issues" target="_blank">GitHub Issues</a>: Report bugs or suggest features.</li>
-                            <li><a href="https://github.com/VoxDroid/KemonoDownloader/discussions" target="_blank">Discussions</a>: Engage with the community for support and ideas.</li>
-                        </ul>
-                    </p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Contributing & License Section -->
-    <section class="bg-light-section">
-        <div class="container">
-            <h2 class="text-center">Contributing & License</h2>
-            <div class="row">
-                <div class="col-md-6">
-                    <h4><i class="fas fa-code-branch"></i> Contributing</h4>
-                    <p>Kemono Downloader is open-source, and contributions are encouraged! Here’s how to get involved:
-                        <ol>
-                            <li>Fork the repository: <a href="https://github.com/VoxDroid/KemonoDownloader" target="_blank">https://github.com/VoxDroid/KemonoDownloader</a>.</li>
-                            <li>Create a branch for your feature or fix.</li>
-                            <li>Submit a pull request with a clear description of your changes.</li>
-                            <li>Adhere to coding standards (to be detailed in a future <code>CONTRIBUTING.md</code>).</li>
-                            <li>Test your changes thoroughly before submission.</li>
-                        </ol>
-                    </p>
-                </div>
-                <div class="col-md-6">
-                    <h4><i class="fas fa-balance-scale"></i> License</h4>
-                    <p>This project is licensed under the <a href="https://github.com/VoxDroid/KemonoDownloader/blob/main/LICENSE" target="_blank">MIT License</a>. Use, modify, and distribute it freely per the license terms.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Dependencies Section -->
-    <section class="bg-dark-section text-white">
-        <div class="container">
-            <h2 class="text-center">Dependencies</h2>
-            <p class="text-center">To build from source, install the following Python packages:</p>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item">PyQt6 (for the GUI)</li>
-                <li class="list-group-item">requests (for HTTP requests)</li>
-                <li class="list-group-item">beautifulsoup4 (for HTML parsing)</li>
-                <li class="list-group-item">qtawesome (for icons)</li>
+                        <span class="language-name" data-i18n="korean">Korean</span>
+                    </a>
+                </li>
             </ul>
-            <p class="text-center mt-3">Create a <code>requirements.txt</code> file with these dependencies and run <code>pip install -r requirements.txt</code>.</p>
         </div>
-    </section>
+    </div>
+    
+    <div class="d-flex flex-column align-items-center mt-3">
+        <a href="https://github.com/VoxDroid/KemonoDownloader" target="_blank" class="btn btn-custom">
+            <i class="fab fa-github"></i> <span data-i18n="githubRepo">GitHub Repository</span>
+        </a>
+        <p align="center" style="margin-top: 15px;">
+            <a href="https://ko-fi.com/O4O6LO7Q1" target="_blank">
+                <img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="ko-fi" style="border: 0; background-color: #30363d; filter: brightness(1.2); padding: 5px; border-radius: 5px; transition: all 0.3s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+            </a>
+        </p>
+        <div class="sf-badges mt-4">
+            <!-- Begin SF Tag -->
+            <div class="sf-root" data-id="3859460" data-badge="oss-users-love-us-black" style="width:105px">
+                <a href="https://sourceforge.net/projects/kemonodownloader/" target="_blank">KemonoDownloader</a>
+            </div>
+            <script>(function () {var sc=document.createElement('script');sc.async=true;sc.src='https://b.sf-syn.com/badge_js?sf_id=3859460';var p=document.getElementsByTagName('script')[0];p.parentNode.insertBefore(sc, p);})();
+            </script>
+            <!-- End SF Tag -->
 
-    <!-- Footer Section -->
-    <footer>
-        <p>Developed by <a href="https://github.com/VoxDroid" target="_blank">VoxDroid</a> | <a href="https://ko-fi.com/izeno" target="_blank">Support on Ko-fi</a></p>
-    </footer>
+            <!-- Begin SF Tag -->
+            <div class="sf-root" data-id="3859460" data-badge="oss-rising-star-black" data-metadata="achievement=oss-rising-star" style="width:105px">
+                <a href="https://sourceforge.net/projects/kemonodownloader/" target="_blank">KemonoDownloader</a>
+            </div>
+            <script>(function () {var sc=document.createElement('script');sc.async=true;sc.src='https://b.sf-syn.com/badge_js?sf_id=3859460';var p=document.getElementsByTagName('script')[0];p.parentNode.insertBefore(sc, p);})();
+            </script>
+            <!-- End SF Tag -->
+        </div>
+    </div>
+</header>
 
-    <!-- Back to Top Button -->
-    <button id="back-to-top" title="Back to Top">
-        <i class="fas fa-arrow-up"></i>
-    </button>
+<!-- Section Separator - New design replacing diagonal dividers -->
+<div class="section-separator"></div>
 
-    <!-- Scripts -->
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Highlight.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
-    <!-- Custom JS -->
-    <script src="assets/js/index.js"></script>
+<!-- Overview Section -->
+<section class="bg-light-section">
+    <div class="container section-content">
+        <h2 class="text-center" data-aos="fade-up" data-i18n="overviewTitle">Overview</h2>
+        <p class="lead text-center" data-aos="fade-up" data-aos-delay="100" data-i18n="overviewDescription">Kemono Downloader is a versatile Python-based desktop application built with PyQt6, designed to download content from <a href="https://kemono.su" target="_blank">Kemono.su</a>. This tool enables users to archive individual posts or entire creator profiles from services like Patreon, Fanbox, and more, supporting a wide range of file types with customizable settings and advanced features.</p>
+    </div>
+</section>
+
+<!-- Section Separator -->
+<div class="section-separator"></div>
+
+<!-- Important Notices Section (Added from README) -->
+<section class="bg-dark-section text-white">
+    <div class="container section-content">
+        <h2 class="text-center" data-aos="fade-up" data-i18n="importantNoticesTitle">Important Notices</h2>
+        
+        <div class="notice-box" data-aos="fade-up" data-aos-delay="100">
+            <h4><i class="fas fa-exclamation-triangle"></i> <span data-i18n="disclaimerTitle">Disclaimer</span></h4>
+            <p data-i18n="disclaimerText1">KemonoDownloader is a tool designed for personal and educational use only, to assist users in downloading content from Kemono.su. The maintainers of this project <strong>do not condone or support the unauthorized distribution of copyrighted material</strong>. Users are solely responsible for ensuring they have the legal right to access and download content from Kemono.su, and for complying with all applicable laws, as well as the terms of service of the original platforms from which the content originates (e.g., Patreon, Pixiv Fanbox, Gumroad).</p>
+            <p data-i18n="disclaimerText2"><strong>Misuse of this tool to infringe on creators' rights, violate copyright laws, or breach terms of service is strictly prohibited.</strong> The maintainers are not liable for any misuse of KemonoDownloader or any consequences arising from its use, including but not limited to legal action, financial loss, or damage to third parties.</p>
+        </div>
+        
+        <div class="notice-box" data-aos="fade-up" data-aos-delay="200">
+            <h4><i class="fas fa-heart"></i> <span data-i18n="ethicalUseTitle">Ethical Use Guidelines</span></h4>
+            <p data-i18n="ethicalUseText1">KemonoDownloader interacts with content from Kemono.su, which may include material originally posted on paywalled platforms like Patreon, Pixiv Fanbox, and Gumroad. Many creators on these platforms rely on paid subscriptions for their livelihood. Downloading and redistributing their content without permission can harm their ability to continue creating.</p>
+            <p data-i18n="ethicalUseText2">We strongly encourage users to:</p>
+            <ul>
+                <li data-i18n="ethicalUseList1">Use KemonoDownloader responsibly and only for content you have the legal right to access.</li>
+                <li data-i18n="ethicalUseList2">Support creators directly by subscribing to their official channels on platforms like Patreon, Pixiv Fanbox, or Gumroad.</li>
+                <li data-i18n="ethicalUseList3">Avoid redistributing downloaded content, as this may violate copyright laws and harm creators.</li>
+            </ul>
+        </div>
+        
+        <div class="notice-box" data-aos="fade-up" data-aos-delay="300">
+            <h4><i class="fas fa-shield-alt"></i> <span data-i18n="risksTitle">Risks and Limitations</span></h4>
+            <ul>
+                <li><strong data-i18n="risksLegalTitle">Legal Risks</strong>: <span data-i18n="risksLegalText">Downloading content from Kemono.su may violate copyright laws or the terms of service of the original platforms. Users assume all legal risks associated with using this tool.</span></li>
+                <li><strong data-i18n="risksDependencyTitle">Dependency on Kemono.su</strong>: <span data-i18n="risksDependencyText">KemonoDownloader relies on Kemono.su, which has a history of inconsistent updates and downtime. If Kemono.su becomes unavailable, this tool will lose its functionality.</span></li>
+                <li><strong data-i18n="risksRateLimitsTitle">Rate Limits and Errors</strong>: <span data-i18n="risksRateLimitsText">Kemono.su may impose rate limits or other restrictions that affect download performance. The maintainers cannot guarantee uninterrupted access to Kemono.su's content.</span></li>
+            </ul>
+        </div>
+        
+        <div class="notice-box" data-aos="fade-up" data-aos-delay="400">
+            <h4><i class="fas fa-users"></i> <span data-i18n="communityTitle">Community Standards</span></h4>
+            <p data-i18n="communityText1">We are committed to fostering a welcoming and respectful community around KemonoDownloader. Please read our <a href="CODE_OF_CONDUCT.md">Code of Conduct</a> to understand the standards we expect from all contributors and users. Key points include:</p>
+            <ul>
+                <li data-i18n="communityList1">Respecting the intellectual property rights of creators.</li>
+                <li data-i18n="communityList2">Refraining from using KemonoDownloader to engage in illegal activities, such as unauthorized distribution of copyrighted material.</li>
+                <li data-i18n="communityList3">Reporting any violations of the Code of Conduct to the maintainers via github, sourceforge or by opening a private issue labeled "Code of Conduct Violation."</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- Section Separator -->
+<div class="section-separator"></div>
+
+<!-- Features Section -->
+<section class="bg-light-section">
+    <div class="container section-content">
+        <h2 class="text-center" data-aos="fade-up" data-i18n="featuresTitle">Features</h2>
+        <div class="row features-row">
+            <div class="col-md-4" data-aos="zoom-in" data-aos-delay="100">
+                <div class="card h-100 text-center p-4">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-download feature-icon"></i>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title" data-i18n="featurePostDownloading">Post Downloading</h5>
+                        <p class="card-text" data-i18n="featurePostDownloadingDesc">Easily download files from specific Kemono.su posts using their URLs.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4" data-aos="zoom-in" data-aos-delay="200">
+                <div class="card h-100 text-center p-4">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-users feature-icon"></i>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title" data-i18n="featureCreatorArchiving">Creator Archiving</h5>
+                        <p class="card-text" data-i18n="featureCreatorArchivingDesc">Bulk download all posts and files from a creator's profile with a single click.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4" data-aos="zoom-in" data-aos-delay="300">
+                <div class="card h-100 text-center p-4">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-file-alt feature-icon"></i>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title" data-i18n="featureFileTypeSupport">File Type Support</h5>
+                        <p class="card-text" data-i18n="featureFileTypeSupportDesc">Handle images (JPG, PNG, GIF), videos (MP4), archives (ZIP, 7Z), PDFs, and more.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row features-row">
+            <div class="col-md-4" data-aos="zoom-in" data-aos-delay="100">
+                <div class="card h-100 text-center p-4">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-cogs feature-icon"></i>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title" data-i18n="featureConcurrentDownloads">Concurrent Downloads</h5>
+                        <p class="card-text" data-i18n="featureConcurrentDownloadsDesc">Adjust the number of simultaneous downloads (1-10) for optimal performance.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4" data-aos="zoom-in" data-aos-delay="200">
+                <div class="card h-100 text-center p-4">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-shield-alt feature-icon"></i>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title" data-i18n="featureFileDeduplication">File Deduplication</h5>
+                        <p class="card-text" data-i18n="featureFileDeduplicationDesc">Prevent redundant downloads using URL hashes.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4" data-aos="zoom-in" data-aos-delay="300">
+                <div class="card h-100 text-center p-4">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-image feature-icon"></i>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title" data-i18n="featureImagePreviews">Image Previews</h5>
+                        <p class="card-text" data-i18n="featureImagePreviewsDesc">Preview images before downloading to verify content.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row features-row">
+            <div class="col-md-4" data-aos="zoom-in" data-aos-delay="100">
+                <div class="card h-100 text-center p-4">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-terminal feature-icon"></i>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title" data-i18n="featureDetailedLogging">Detailed Logging</h5>
+                        <p class="card-text" data-i18n="featureDetailedLoggingDesc">Track progress and troubleshoot issues with an in-app console.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4" data-aos="zoom-in" data-aos-delay="200">
+                <div class="card h-100 text-center p-4">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-desktop feature-icon"></i>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title" data-i18n="featureCrossPlatformUI">Cross-Platform UI</h5>
+                        <p class="card-text" data-i18n="featureCrossPlatformUIDesc">Built with PyQt6 for a modern, intuitive interface compatible with multiple operating systems.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4" data-aos="zoom-in" data-aos-delay="300">
+                <div class="card h-100 text-center p-4">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-play-circle feature-icon"></i>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title" data-i18n="featureMediaPlayback">Media Playback</h5>
+                        <p class="card-text" data-i18n="featureMediaPlaybackDesc">Preview videos and GIFs with built-in playback controls.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row features-row">
+            <div class="col-md-4" data-aos="zoom-in" data-aos-delay="100">
+                <div class="card h-100 text-center p-4">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-language feature-icon"></i>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title" data-i18n="featureMultilingualSupport">Multilingual Support</h5>
+                        <p class="card-text" data-i18n="featureMultilingualSupportDesc">Switch between English, Japanese, and Korean languages dynamically.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4" data-aos="zoom-in" data-aos-delay="200">
+                <div class="card h-100 text-center p-4">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-sync feature-icon"></i>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title" data-i18n="featureAutomaticUpdates">Automatic Updates</h5>
+                        <p class="card-text" data-i18n="featureAutomaticUpdatesDesc">Check for new versions on startup with optional notifications.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4" data-aos="zoom-in" data-aos-delay="300">
+                <div class="card h-100 text-center p-4">
+                    <div class="feature-icon-wrapper">
+                        <i class="fas fa-sliders-h feature-icon"></i>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title" data-i18n="featureCustomizableSettings">Customizable Settings</h5>
+                        <p class="card-text" data-i18n="featureCustomizableSettingsDesc">Tailor save directories, folder names, notifications, and themes to your preference.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section Separator -->
+<div class="section-separator"></div>
+
+<!-- Installation Section -->
+<section class="bg-dark-section text-white">
+    <div class="container section-content">
+        <h2 class="text-center" data-aos="fade-up" data-i18n="installationTitle">Installation</h2>
+        <p class="text-center" data-aos="fade-up" data-aos-delay="100" data-i18n="installationDescription">Kemono Downloader is now packaged using <a href="https://briefcase.readthedocs.io/" target="_blank">Briefcase</a>, making it easier to run or distribute as a native application across platforms. You can either build from source or use pre-compiled binaries where available.</p>
+        
+        <div class="accordion" id="installationAccordion" data-aos="fade-up" data-aos-delay="200">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingOne">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                        <i class="fas fa-code me-2"></i> <span data-i18n="buildingWithBriefcase">Building with Briefcase (All Platforms)</span>
+                    </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#installationAccordion">
+                    <div class="accordion-body">
+                        <ol>
+                            <li data-i18n="installStep1">Ensure you have <strong>Python 3.9+</strong> installed on your system (Windows, macOS, Linux).</li>
+                            <li data-i18n="installStep2">Clone this repository:<br><pre><code class="language-bash">git clone https://github.com/VoxDroid/KemonoDownloader.git
+cd KemonoDownloader</code></pre></li>
+                            <li data-i18n="installStep3">Install Briefcase and dependencies:<br><pre><code class="bash">pip install briefcase
+pip install -r requirements.txt</code></pre></li>
+                            <li data-i18n="installStep4">Initialize the Briefcase project (if not already set up):<br><pre><code class="bash">briefcase create</code></pre></li>
+                            <li data-i18n="installStep5">Build the application:
+                                <ul>
+                                    <li><strong>Windows</strong>: <code>briefcase build windows</code></li>
+                                    <li><strong>macOS</strong>: <code>briefcase build macos</code></li>
+                                    <li><strong>Linux</strong>: <code>briefcase build linux</code></li>
+                                </ul>
+                            </li>
+                            <li data-i18n="installStep6">Run the application:
+                                <ul>
+                                    <li><strong>Windows</strong>: <code>briefcase run windows</code></li>
+                                    <li><strong>macOS</strong>: <code>briefcase run macos</code></li>
+                                    <li><strong>Linux</strong>: <code>briefcase run linux</code></li>
+                                </ul>
+                            </li>
+                            <p><em data-i18n="installNote">Note</em>: <span data-i18n="installNoteText">An internet connection is required to fetch content from Kemono.su.</span></p>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingTwo">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                        <i class="fas fa-download me-2"></i> <span data-i18n="preCompiledBinaries">Pre-Compiled Binaries</span>
+                    </button>
+                </h2>
+                <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#installationAccordion">
+                    <div class="accordion-body">
+                        <ul>
+                            <li data-i18n="installWindows"><strong>Windows</strong>: Download the latest <code>.exe</code> (portable) or <code>.msi</code> (installer) tagged with [<strong>W</strong>] for windows, from the <a href="https://github.com/VoxDroid/KemonoDownloader/releases" target="_blank">Releases page</a>. Run the msi installer or use the portable version for no-setup runs.</li>
+                            <li data-i18n="installMacOS"><strong>macOS</strong>: Download the latest universal <code>.dmg</code> (x86_64 and Apple Silicon) tagged with [<strong>M</strong>] for MacOS, from the <a href="https://github.com/VoxDroid/KemonoDownloader/releases" target="_blank">Releases page</a>. Open the DMG, drag the app to Applications, and launch it.</li>
+                            <li data-i18n="installLinux"><strong>Linux</strong>: Download the latest <code>.rpm</code> (for Fedora/Red Hat), <code>.deb</code> (for Debian/Ubuntu), or <code>.pkg.tar.zst</code> (for Arch/Pacman) tagged with [<strong>L</strong>] for Linux, from the <a href="https://github.com/VoxDroid/KemonoDownloader/releases" target="_blank">Releases page</a>. Run the installer and launch the app.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section Separator -->
+<div class="section-separator"></div>
+
+<!-- Usage Section -->
+<section class="bg-light-section">
+    <div class="container section-content">
+        <h2 class="text-center" data-aos="fade-up" data-i18n="usageTitle">Usage</h2>
+        <p class="lead text-center" data-aos="fade-up" data-aos-delay="100" data-i18n="usageDescription">Upon launching, you'll see an introductory screen with a "Launch" button. Click it to enter the main interface, featuring four tabs: <strong>Post Downloader</strong>, <strong>Creator Downloader</strong>, <strong>Settings</strong>, and <strong>Help</strong>. The in-app Help tab contains a comprehensive user manual.</p>
+        <div class="row mt-4">
+            <div class="col-md-6 mb-4" data-aos="fade-right" data-aos-delay="200">
+                <div class="highlight-box usage-card">
+                    <h4><i class="fas fa-play"></i> <span data-i18n="gettingStarted">Getting Started</span></h4>
+                    <div class="usage-card-content">
+                        <ul>
+                            <li data-i18n="usageStep1">The application creates default directories (<code>Downloads</code>, <code>Cache</code>, <code>Other Files</code>) in the specified save location.</li>
+                            <li data-i18n="usageStep2">Ensure an active internet connection to access Kemono.su content.</li>
+                            <li data-i18n="usageStep3">Explore the Help tab for detailed instructions and troubleshooting tips.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4" data-aos="fade-left" data-aos-delay="200">
+                <div class="highlight-box usage-card">
+                    <h4><i class="fas fa-download"></i> <span data-i18n="postDownloaderTab">Post Downloader Tab</span></h4>
+                    <div class="usage-card-content">
+                        <ol>
+                            <li data-i18n="postDownloaderStep1">Enter a post URL (e.g., <code>https://kemono.su/patreon/user/123456789/post/123456789</code>) in the "Enter post URL" field.</li>
+                            <li data-i18n="postDownloaderStep2">Click "Add to Queue" to add it to the list.</li>
+                            <li data-i18n="postDownloaderStep3">Click the eye icon to view files, filter by type (e.g., JPG, ZIP), and select files to download.</li>
+                            <li data-i18n="postDownloaderStep4">Click "Download" to start, and monitor progress with the progress bars and console.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4" data-aos="fade-right" data-aos-delay="300">
+                <div class="highlight-box usage-card">
+                    <h4><i class="fas fa-users"></i> <span data-i18n="creatorDownloaderTab">Creator Downloader Tab</span></h4>
+                    <div class="usage-card-content">
+                        <ol>
+                            <li data-i18n="creatorDownloaderStep1">Enter a creator URL (e.g., <code>https://kemono.su/patreon/user/123456789</code>) in the "Enter creator URL" field.</li>
+                            <li data-i18n="creatorDownloaderStep2">Click "Add to Queue" to add it to the list.</li>
+                            <li data-i18n="creatorDownloaderStep3">Click the eye icon to fetch posts, configure options (Main File, Attachments, Content Images), and select posts.</li>
+                            <li data-i18n="creatorDownloaderStep4">Click "Download" to begin, and track progress via the interface.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4" data-aos="fade-left" data-aos-delay="300">
+                <div class="highlight-box usage-card">
+                    <h4><i class="fas fa-cogs"></i> <span data-i18n="settingsTab">Settings Tab</span></h4>
+                    <div class="usage-card-content">
+                        <ol>
+                            <li data-i18n="settingsStep1">Set the folder name and save directory for downloads.</li>
+                            <li data-i18n="settingsStep2">Adjust simultaneous downloads (1-10) using the slider or spinbox.</li>
+                            <li data-i18n="settingsStep3">Click "Apply Changes" to save.</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-12" data-aos="fade-up" data-aos-delay="400">
+                <div class="highlight-box usage-card">
+                    <h4><i class="fas fa-question-circle"></i> <span data-i18n="helpTab">Help Tab</span></h4>
+                    <div class="usage-card-content">
+                        <p data-i18n="helpTabDesc">Navigate to the Help tab to read detailed guides, examples, and support information.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section Separator -->
+<div class="section-separator"></div>
+
+<!-- Screenshots Section -->
+<section class="bg-dark-section text-white">
+    <div class="container section-content">
+        <h2 class="text-center" data-aos="fade-up" data-i18n="screenshotsTitle">Screenshots</h2>
+        <div class="row justify-content-center">
+            <div class="col-md-4 mb-4" data-aos="flip-left" data-aos-delay="100">
+                <img src="assets/previews/kd_pdown.png" alt="Post Downloader Tab" class="img-fluid screenshot-img" onclick="showImageOverlay('assets/previews/kd_pdown.png')">
+                <p class="text-center mt-3"><strong data-i18n="postDownloaderTabCaption">Post Downloader Tab</strong></p>
+            </div>
+            <div class="col-md-4 mb-4" data-aos="flip-left" data-aos-delay="200">
+                <img src="assets/previews/kd_cdown.png" alt="Creator Downloader Tab" class="img-fluid screenshot-img" onclick="showImageOverlay('assets/previews/kd_cdown.png')">
+                <p class="text-center mt-3"><strong data-i18n="creatorDownloaderTabCaption">Creator Downloader Tab</strong></p>
+            </div>
+            <div class="col-md-4 mb-4" data-aos="flip-left" data-aos-delay="300">
+                <img src="assets/previews/kd_settings.png" alt="Settings Tab" class="img-fluid screenshot-img" onclick="showImageOverlay('assets/previews/kd_settings.png')">
+                <p class="text-center mt-3"><strong data-i18n="settingsTabCaption">Settings Tab</strong></p>
+            </div>
+        </div>
+        <!-- Floating Image Overlay -->
+        <div class="image-overlay" id="imageOverlay">
+            <button class="close-btn" id="closeOverlayBtn"><i class="fas fa-times"></i></button>
+            <img id="overlayImage" src="/placeholder.svg" alt="Screenshot">
+        </div>
+    </div>
+</section>
+
+<!-- Section Separator -->
+<div class="section-separator"></div>
+
+<!-- Releases Section -->
+<section class="bg-light-section">
+    <div class="container section-content">
+        <h2 class="text-center" data-aos="fade-up" data-i18n="releasesTitle">Releases</h2>
+        <div class="row">
+            <div class="col-md-12" data-aos="fade-up" data-aos-delay="100">
+                <ul>
+                    <li data-i18n="releasesWindows"><strong>Windows</strong>: Pre-compiled <code>.exe</code> available in the <a href="https://github.com/VoxDroid/KemonoDownloader/releases" target="_blank">Releases section</a>.</li>
+                    <li data-i18n="releasesMacOS"><strong>macOS</strong>: Pre-compiled universal <code>.dmg</code> (x86_64 and Apple Silicon) available in the <a href="https://github.com/VoxDroid/KemonoDownloader/releases" target="_blank">Releases section</a>.</li>
+                    <li data-i18n="releasesLinux"><strong>Linux</strong>: Pre-compiled <code>.rpm</code> (for Fedora/Red Hat), <code>.deb</code> (for Debian/Ubuntu), or <code>.pkg.tar.tsz</code> (for Arch/Pacman) available in the <a href="https://github.com/VoxDroid/KemonoDownloader/releases" target="_blank">Releases page</a>.</li>
+                </ul>
+                <p data-i18n="releasesDesc">Check release notes for details on new features, bug fixes, and version updates. The Briefcase-built Python source remains the primary method, supporting all platforms with proper setup.</p>
+                
+                <div class="text-center mt-4">
+                    <a href="https://sourceforge.net/projects/kemonodownloader/files/latest/download" class="btn btn-custom" data-aos="zoom-in" data-aos-delay="200">
+                        <i class="fas fa-download"></i> <span data-i18n="downloadLatestRelease">Download Latest Release</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section Separator -->
+<div class="section-separator"></div>
+
+<!-- Support & Contributing Section -->
+<section class="bg-dark-section text-white">
+    <div class="container section-content">
+        <div class="row">
+            <div class="col-md-6" data-aos="fade-right" data-aos-delay="100">
+                <h2 class="text-center" data-i18n="supportTitle">Support</h2>
+                <p data-i18n="supportDesc">For ways to get help, report issues, or support the project's development, please see the <a href="SUPPORT.md">Support page</a>.</p>
+                <ul>
+                    <li data-i18n="supportInApp"><strong>In-App Help</strong>: The Help tab contains a comprehensive user manual.</li>
+                    <li data-i18n="supportGitHub"><strong>GitHub Discussions</strong>: Engage with the community on the <a href="https://github.com/VoxDroid/KemonoDownloader/discussions" target="_blank">Discussions tab</a>.</li>
+                    <li data-i18n="supportBugs"><strong>Report Bugs</strong>: Open an issue on the <a href="https://github.com/VoxDroid/KemonoDownloader/issues" target="_blank">Issues page</a>.</li>
+                    <li data-i18n="supportDevelopment"><strong>Support Development</strong>: <a href="https://ko-fi.com/izeno" target="_blank">Buy me a coffee on Ko-fi</a>.</li>
+                </ul>
+            </div>
+            <div class="col-md-6" data-aos="fade-left" data-aos-delay="100">
+                <h2 class="text-center" data-i18n="contributingTitle">Contributing</h2>
+                <p data-i18n="contributingDesc">Kemono Downloader is open-source, and contributions are encouraged! Please read our <a href="CONTRIBUTING.md">Contributing Guidelines</a> for details on how to get involved, submit pull requests, and suggest features. All contributors are expected to adhere to our <a href="CODE_OF_CONDUCT.md">Code of Conduct</a>.</p>
+                <ol>
+                    <li data-i18n="contributingStep1">Fork the repository on <a href="https://github.com/VoxDroid/KemonoDownloader" target="_blank">GitHub</a>.</li>
+                    <li data-i18n="contributingStep2">Create a branch for your feature or fix.</li>
+                    <li data-i18n="contributingStep3">Submit a pull request with a clear description of your changes.</li>
+                    <li data-i18n="contributingStep4">Adhere to coding standards and test your changes thoroughly.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section Separator -->
+<div class="section-separator"></div>
+
+<!-- License & Dependencies Section -->
+<section class="bg-light-section">
+    <div class="container section-content">
+        <div class="row">
+            <div class="col-md-6" data-aos="fade-right" data-aos-delay="100">
+                <h2 class="text-center" data-i18n="licenseTitle">License</h2>
+                <p data-i18n="licenseDesc">This project is licensed under the <a href="LICENSE">MIT License</a>. Use, modify, and distribute it freely per the license terms.</p>
+            </div>
+            <div class="col-md-6" data-aos="fade-left" data-aos-delay="100">
+                <h2 class="text-center" data-i18n="dependenciesTitle">Dependencies</h2>
+                <p data-i18n="dependenciesDesc">To build from source, install the following Python packages:</p>
+                <ul>
+                    <li data-i18n="dependencyPyQt6"><code>PyQt6</code> (for the GUI)</li>
+                    <li data-i18n="dependencyRequests"><code>requests</code> (for HTTP requests)</li>
+                    <li data-i18n="dependencyBS4"><code>beautifulsoup4</code> (for HTML parsing)</li>
+                    <li data-i18n="dependencyQtAwesome"><code>qtawesome</code> (for icons)</li>
+                    <li data-i18n="dependencyBriefcase"><code>briefcase</code> (for packaging the app)</li>
+                </ul>
+                <p data-i18n="dependenciesNote">Create a <code>requirements.txt</code> file with these dependencies and run <code>pip install -r requirements.txt</code>.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section Divider -->
+<div class="section-divider-reverse"></div>
+
+<!-- SourceForge Badges Section -->
+<section class="bg-dark-section text-white">
+    <div class="container section-content">
+        <h2 class="text-center" data-aos="fade-up" data-i18n="downloadFromSourceForge">Download from SourceForge</h2>
+        <div class="row justify-content-center">
+            <div class="col-md-8 text-center" data-aos="zoom-in" data-aos-delay="100">
+                <a href="https://sourceforge.net/p/kemonodownloader/"><img alt="Download KemonoDownloader" src="https://sourceforge.net/sflogo.php?type=18&amp;group_id=3859460" width=200 class="floating-element"></a>
+                <br>
+                <br>
+                <a href="https://sourceforge.net/projects/kemonodownloader/files/latest/download" class="floating-element"><img alt="Download KemonoDownloader" src="https://a.fsdn.com/con/app/sf-download-button" width=276 height=48 srcset="https://a.fsdn.com/con/app/sf-download-button?button_size=2x 2x"></a>
+                <br>
+                <br>
+                <div class="d-flex justify-content-center flex-wrap gap-2">
+                    <a href="https://sourceforge.net/projects/kemonodownloader/files/latest/download"><img alt="Download KemonoDownloader" src="https://img.shields.io/sourceforge/dt/kemonodownloader.svg" ></a>
+                    <a href="https://sourceforge.net/projects/kemonodownloader/files/latest/download"><img alt="Download KemonoDownloader" src="https://img.shields.io/sourceforge/dd/kemonodownloader.svg" ></a>
+                    <a href="https://sourceforge.net/projects/kemonodownloader/files/latest/download"><img alt="Download KemonoDownloader" src="https://img.shields.io/sourceforge/dw/kemonodownloader.svg" ></a>
+                    <a href="https://sourceforge.net/projects/kemonodownloader/files/latest/download"><img alt="Download KemonoDownloader" src="https://img.shields.io/sourceforge/dm/kemonodownloader.svg" ></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer Section -->
+<footer>
+    <p><span data-i18n="developedBy">Developed by</span> <a href="https://github.com/VoxDroid" target="_blank">VoxDroid</a> | <a href="https://ko-fi.com/izeno" target="_blank" data-i18n="supportOnKofi">Support on Ko-fi</a></p>
+</footer>
+
+<!-- Back to Top Button -->
+<button id="back-to-top" title="Back to Top">
+    <i class="fas fa-arrow-up"></i>
+</button>
+
+<!-- Scripts -->
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Highlight.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+<!-- AOS - Animate On Scroll Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+<!-- i18n Script -->
+<script src="assets/js/i18n.js"></script>
+<!-- Custom JS -->
+<script src="assets/js/index.js"></script>
 </body>
 </html>
