@@ -218,19 +218,19 @@ Kemono Downloader의 주요 탭 미리보기:
 <table align="center">
   <tr>
     <td align="center">
-      <img src="assets/previews/kd_pdown.png" alt="게시물 다운로더 탭" width="400"/>
+      <img src="../assets/previews/kd_pdown.png" alt="게시물 다운로더 탭" width="400"/>
       <br>
       <strong>게시물 다운로더 탭</strong>
     </td>
     <td align="center">
-      <img src="assets/previews/kd_cdown.png" alt="크리에이터 다운로더 탭" width="400"/>
+      <img src="../assets/previews/kd_cdown.png" alt="크리에이터 다운로더 탭" width="400"/>
       <br>
       <strong>크리에이터 다운로더 탭</strong>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="assets/previews/kd_settings.png" alt="설정 탭" width="400"/>
+      <img src="../previews/kd_settings.png" alt="설정 탭" width="400"/>
       <br>
       <strong>설정 탭</strong>
     </td>

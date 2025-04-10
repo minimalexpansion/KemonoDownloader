@@ -218,19 +218,19 @@ Kemono Downloaderのメインタブのプレビュー：
 <table align="center">
   <tr>
     <td align="center">
-      <img src="assets/previews/kd_pdown.png" alt="投稿ダウンローダータブ" width="400"/>
+      <img src="../assets/previews/kd_pdown.png" alt="投稿ダウンローダータブ" width="400"/>
       <br>
       <strong>投稿ダウンローダータブ</strong>
     </td>
     <td align="center">
-      <img src="assets/previews/kd_cdown.png" alt="クリエイターダウンローダータブ" width="400"/>
+      <img src="../assets/previews/kd_cdown.png" alt="クリエイターダウンローダータブ" width="400"/>
       <br>
       <strong>クリエイターダウンローダータブ</strong>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="assets/previews/kd_settings.png" alt="設定タブ" width="400"/>
+      <img src="../assets/previews/kd_settings.png" alt="設定タブ" width="400"/>
       <br>
       <strong>設定タブ</strong>
     </td>
