@@ -1,2 +1,0 @@
-codesign -f -s - build/kemonodownloader/macos/app/KemonoDownloader.app
-codesign -dv build/kemonodownloader/macos/app/KemonoDownloader.app   

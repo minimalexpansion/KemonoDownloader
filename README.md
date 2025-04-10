@@ -48,6 +48,12 @@
   <a href="https://voxdroid.github.io/KemonoDownloader/" target="_blank">
     <img src="https://img.shields.io/badge/Website-Visit%20Now-21262d?logo=github&style=flat&labelColor=21262d&color=58a6ff" alt="Website Badge">
   </a>
+  <a href="https://github.com/VoxDroid/KemonoDownloader/blob/main/README/README_JP.md" target="_blank">
+    <img src="https://img.shields.io/badge/日本語版-こちら-21262d?logo=github&style=flat&labelColor=21262d&color=ff69b4" alt="Japanese Version Badge">
+  </a>
+  <a href="https://github.com/VoxDroid/KemonoDownloader/blob/main/README/README_KR.md" target="_blank">
+    <img src="https://img.shields.io/badge/한국어판-여기-21262d?logo=github&style=flat&labelColor=21262d&color=20b2aa" alt="Korean Version Badge">
+  </a>
 </div>
 
 <br>
