@@ -230,7 +230,7 @@ Kemono Downloader의 주요 탭 미리보기:
   </tr>
   <tr>
     <td align="center">
-      <img src="../previews/kd_settings.png" alt="설정 탭" width="400"/>
+      <img src="../assets/previews/kd_settings.png" alt="설정 탭" width="400"/>
       <br>
       <strong>설정 탭</strong>
     </td>
