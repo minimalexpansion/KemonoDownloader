@@ -34,7 +34,7 @@ This Code of Conduct applies to all project spaces, including the GitHub reposit
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project maintainers at [voxdroid.kemono@gmail.com](mailto:voxdroid.kemono@gmail.com). Alternatively, you can open a private issue in the repository labeled "Code of Conduct Violation," which will be visible only to maintainers.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project maintainers at [izeno.contact@gmail.com](mailto:izeno.contact@gmail.com). Alternatively, you can open a private issue in the repository labeled "Code of Conduct Violation," which will be visible only to maintainers.
 
 All complaints will be reviewed and investigated promptly and fairly. The project maintainers are obligated to maintain confidentiality with regard to the reporter of an incident. The maintainers will determine the appropriate response, which may include:
 

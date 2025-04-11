@@ -5,7 +5,7 @@ version = "3.6.0"
 url = "https://github.com/VoxDroid/KemonoDownloader"
 license.file = "LICENSE"
 author = "VoxDroid"
-author_email = "voxdroid@github.com"
+author_email = "izeno.contact@gmail.com"
 
 [tool.briefcase.app.kemonodownloader]
 formal_name = "KemonoDownloader"
