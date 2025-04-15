@@ -39,9 +39,6 @@
   <a href="https://github.com/VoxDroid/KemonoDownloader">
     <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey" alt="プラットフォーム">
   </a>
-  <a href="https://github.com/VoxDroid/KemonoDownloader/releases">
-    <img src="https://img.shields.io/badge/version-v3.6.0-brightgreen" alt="バージョン">
-  </a>
   <a>
     <img src="https://img.shields.io/github/v/release/VoxDroid/KemonoDownloader?label=最新リリース" alt="最新リリース">
   </a>

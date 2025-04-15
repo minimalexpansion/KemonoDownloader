@@ -9,6 +9,22 @@ class KDLanguage:
         self.current_language = "english"  # Default language
         self.translations = {
             
+            "download_failed_retrying": {
+                "english": "Download failed for {0}, attempt {1}/{2}: {3}",
+                "japanese": "{0}のダウンロードに失敗しました、試行{1}/{2}：{3}",
+                "korean": "{0} 다운로드 실패, 시도 {1}/{2}: {3}"
+            },
+            "error_downloading_after_retries": {
+                "english": "Failed to download {0} after {1} retries: {2}",
+                "japanese": "{1}回の試行後に{0}のダウンロードに失敗しました：{2}",
+                "korean": "{1}번의 시도 후 {0} 다운로드 실패: {2}"
+            },
+            "retry_countdown": {
+                "english": "Trying again in {0}...",
+                "japanese": "{0}秒後に再試行します...",
+                "korean": "{0}초 후 다시 시도..."
+            },
+            
             # Reset to defaults translation
             "reset_to_defaults" : {
                 "english" : "Reset to Defaults",

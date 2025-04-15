@@ -810,7 +810,8 @@ class DownloadThread(QThread):
             if hash_key == url_hash:
                 existing_path = self.file_hashes[hash_key]["file_path"]
                 if os.path.exists(existing_path):
-                    file_hash = hashlib.md5(open(existing_path, 'rb').read()).hexdigest()
+                    with open(existing_path, 'rb') as f:  # Fixed resource leak
+                        file_hash = hashlib.md5(f.read()).hexdigest()
                     stored_hash = self.file_hashes[hash_key]["file_hash"]
                     if file_hash == stored_hash:
                         self.log.emit(translate("log_info", translate("file_already_downloaded", filename, existing_path)), "INFO")
@@ -821,39 +822,57 @@ class DownloadThread(QThread):
                         return
 
         self.log.emit(translate("log_info", translate("starting_download", file_index + 1, total_files, file_url, post_folder)), "INFO")
-        try:
-            response = requests.get(file_url, headers=HEADERS, stream=True)
-            response.raise_for_status()
-            file_size = int(response.headers.get('content-length', 0)) or 1
-            downloaded_size = 0
-            
-            with open(full_path, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if not self.is_running:
-                        self.log.emit(translate("log_warning", translate("download_interrupted", file_url)), "WARNING")
-                        os.remove(full_path) if os.path.exists(full_path) else None
-                        return
-                    if chunk:
-                        f.write(chunk)
-                        downloaded_size += len(chunk)
-                        progress = int((downloaded_size / file_size) * 100)
-                        self.file_progress.emit(file_index, progress)
-                        if progress == 100:
-                            self.file_completed.emit(file_index, file_url)
+        
+        max_retries = 5
+        for attempt in range(1, max_retries + 1):
+            try:
+                response = requests.get(file_url, headers=HEADERS, stream=True)
+                response.raise_for_status()
+                file_size = int(response.headers.get('content-length', 0)) or 1
+                downloaded_size = 0
+                
+                with open(full_path, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if not self.is_running:
+                            self.log.emit(translate("log_warning", translate("download_interrupted", file_url)), "WARNING")
+                            os.remove(full_path) if os.path.exists(full_path) else None
+                            return
+                        if chunk:
+                            f.write(chunk)
+                            downloaded_size += len(chunk)
+                            progress = int((downloaded_size / file_size) * 100)
+                            self.file_progress.emit(file_index, progress)
+                            if progress == 100:
+                                self.file_completed.emit(file_index, file_url)
 
-            file_hash = hashlib.md5(open(full_path, 'rb').read()).hexdigest()
-            self.file_hashes[url_hash] = {
-                "file_path": full_path,
-                "file_hash": file_hash,
-                "url": file_url
-            }
-            self.save_hashes()
-            self.log.emit(translate("log_info", translate("successfully_downloaded", full_path)), "INFO")
-            self.completed_files.add(file_url)
-            self.check_post_completion(file_url)
-        except Exception as e:
-            self.log.emit(translate("log_error", translate("error_downloading", file_url, e)), "ERROR")
-            self.file_progress.emit(file_index, 0)
+                with open(full_path, 'rb') as f:  # Fixed resource leak
+                    file_hash = hashlib.md5(f.read()).hexdigest()
+                self.file_hashes[url_hash] = {
+                    "file_path": full_path,
+                    "file_hash": file_hash,
+                    "url": file_url
+                }
+                self.save_hashes()
+                self.log.emit(translate("log_info", translate("successfully_downloaded", full_path)), "INFO")
+                self.completed_files.add(file_url)
+                self.check_post_completion(file_url)
+                return  # Success, exit the method
+
+            except Exception as e:
+                if attempt == max_retries:
+                    self.log.emit(translate("log_error", translate("error_downloading_after_retries", file_url, max_retries, str(e))), "ERROR")
+                    self.file_progress.emit(file_index, 0)
+                    return  # All retries failed, proceed to next file
+                else:
+                    self.log.emit(translate("log_warning", translate("download_failed_retrying", file_url, attempt, max_retries, str(e))), "WARNING")
+                    # Countdown for retry delay
+                    for i in range(3, 0, -1):
+                        if not self.is_running:
+                            self.log.emit(translate("log_info", f"Retry for {file_url} cancelled during countdown"), "INFO")
+                            return
+                        self.log.emit(translate("log_info", translate("retry_countdown", i)), "INFO")
+                        time.sleep(1)
+                    continue
 
     def check_post_completion(self, file_url):
         post_id = self.files_to_posts_map.get(file_url)
@@ -1591,11 +1610,12 @@ class PostDownloaderTab(QWidget):
             for thread in self.active_threads[:]:
                 if isinstance(thread, (DownloadThread, PostDetectionThread, FilePreparationThread)):
                     thread.stop()
-            self.append_log_to_console(translate("log_warning", translate("cancelling_downloads")), "WARNING")
-            time.sleep(1)
+                    self.append_log_to_console(translate("log_warning", translate("cancelling_downloads")), "WARNING")
+            time.sleep(0.5)
             for thread in self.active_threads[:]:
                 if thread.isRunning():
                     thread.terminate()
+                    thread.wait()  
                     self.active_threads.remove(thread)
                     self.append_log_to_console(translate("log_info", f"Terminated thread: {thread.__class__.__name__}"), "INFO")
             self.post_file_progress.setStyleSheet("QProgressBar { border: 1px solid #4A5B7A; border-radius: 5px; background: #2A3B5A; } QProgressBar::chunk { background: #D4A017; }")

@@ -1,6 +1,13 @@
 # Kemono Downloader Release Notes
 
-
+## v3.7.0 (16 Apr 2025)
+**feat: Add retry logic and fix thread termination in downloaders**
+- Implemented 5-attempt, 3-second countdown retry in `post_downloader.py` and `creator_downloader.py` for robust downloads.
+- Resolved `ResourceWarning` in `post_downloader.py` with `with` statements.
+- Fixed `RuntimeError` in `creator_downloader.py` by improving thread cleanup.
+- Enhanced `cancel` methods to stop retries instantly with safe thread termination.
+- Added translation keys for retry logging.
+- Adjusted Max Simultaneous Downloads to 20 from 10
 
 ## v3.6.0 (09 Apr 2025)
 **fix: ResourceWarnings and Select All in Downloader Tabs**
