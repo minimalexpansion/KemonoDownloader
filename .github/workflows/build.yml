@@ -5,6 +5,9 @@ on:
   push:
     branches: [ main ]
 
+env:
+  fedver: 'fc42'
+
 jobs:
   check-for-building:
     runs-on: ubuntu-latest
@@ -672,8 +675,8 @@ jobs:
           find . -type f
           echo "Listing output files (RPM):"
           find . -type f | grep -E '\.rpm$'
-          echo "Expected RPM file path: dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1.fc42.x86_64.rpm"
-          if [ -f "dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1.fc42.x86_64.rpm" ]; then
+          echo "Expected RPM file path: dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1.${{ env.fedver }}.x86_64.rpm"
+          if [ -f "dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1.${{ env.fedver }}.x86_64.rpm" ]; then
             echo "RPM file found at expected path."
           else
             echo "RPM file not found at expected path!"
@@ -683,14 +686,14 @@ jobs:
       - name: Rename RPM file
         shell: bash
         run: |
-          cp dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1.fc42.x86_64.rpm dist/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1.fc42.x86_64.rpm
-          rm dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1.fc42.x86_64.rpm
+          cp dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1.${{ env.fedver }}.x86_64.rpm dist/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1.${{ env.fedver }}.x86_64.rpm
+          rm dist/kemonodownloader-${{ steps.extract_version.outputs.version }}-1.${{ env.fedver }}.x86_64.rpm
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: KemonoDownloader-ubuntu-rpm
-          path: dist/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1.fc42.x86_64.rpm
+          path: dist/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1.${{ env.fedver }}.x86_64.rpm
           include-hidden-files: true
 
   build-ubuntu-pkg:
@@ -1234,8 +1237,8 @@ jobs:
         if: steps.read_commit_match.outputs.commit_match == 'true' && steps.check_release.outputs.exists == 'false'
         shell: bash
         run: |
-          ASSET_PATH="artifacts/KemonoDownloader-ubuntu-rpm/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1.fc42.x86_64.rpm"
-          ASSET_NAME="L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1.fc42.x86_64.rpm"
+          ASSET_PATH="artifacts/KemonoDownloader-ubuntu-rpm/L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1.${{ env.fedver }}.x86_64.rpm"
+          ASSET_NAME="L-KemonoDownloader-${{ steps.extract_version.outputs.version }}-1.${{ env.fedver }}.x86_64.rpm"
           if [ ! -f "$ASSET_PATH" ]; then
             echo "Asset file not found at $ASSET_PATH"
             exit 1
