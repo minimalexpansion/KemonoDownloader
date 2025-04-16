@@ -387,21 +387,35 @@ class FilePreparationThread(QThread):
         parts = creator_url.split('/')
         service, creator_id = parts[-3], parts[-1]
         api_url = f"{API_BASE}/{service}/user/{creator_id}/post/{post_id}"
-        try:
-            response = requests.get(api_url, headers=HEADERS)
-            if response.status_code != 200:
-                self.log.emit(translate("log_error", f"Failed to fetch {api_url} - Status code: {response.status_code}"), "ERROR")
-                return None
-            post_data = response.json()
-            post = post_data if isinstance(post_data, dict) and 'post' not in post_data else post_data.get('post', {})
-            self.log.emit(translate("log_debug", f"Post data for {post_id}: {json.dumps(post, indent=2)}"), "INFO")
-            allowed_extensions = [ext.lower() for ext, checkbox in self.creator_ext_checks.items() if checkbox.isChecked()]
-            detected_files = self.detect_files(post, allowed_extensions)
-            files_to_download = [(file_name, file_url) for file_name, file_url in detected_files]
-            return (post_id, files_to_download)
-        except Exception as e:
-            self.log.emit(translate("log_error", f"Error fetching post {post_id}: {str(e)}"), "ERROR")
-            return None
+        max_retries = 5
+        retry_delay_seconds = 5
+        for attempt in range(1, max_retries + 1):
+            try:
+                response = requests.get(api_url, headers=HEADERS)
+                if response.status_code != 200:
+                    if response.status_code == 429 and attempt < max_retries:
+                        self.log.emit(translate("log_warning", f"Rate limit hit for {api_url} (attempt {attempt}/{max_retries}). Retrying..."), "WARNING")
+                        for i in range(retry_delay_seconds, 0, -1):
+                            self.log.emit(translate("log_info", f"Trying again in {i}"), "INFO")
+                            time.sleep(1)
+                        continue
+                    self.log.emit(translate("log_error", f"Failed to fetch {api_url} - Status code: {response.status_code}"), "ERROR")
+                    return None
+                post_data = response.json()
+                post = post_data if isinstance(post_data, dict) and 'post' not in post_data else post_data.get('post', {})
+                self.log.emit(translate("log_debug", f"Post data for {post_id}: {json.dumps(post, indent=2)}"), "INFO")
+                allowed_extensions = [ext.lower() for ext, checkbox in self.creator_ext_checks.items() if checkbox.isChecked()]
+                detected_files = self.detect_files(post, allowed_extensions)
+                files_to_download = [(file_name, file_url) for file_name, file_url in detected_files]
+                return (post_id, files_to_download)
+            except Exception as e:
+                if attempt == max_retries:
+                    self.log.emit(translate("log_error", f"Error fetching post {post_id} after {max_retries} attempts: {str(e)}"), "ERROR")
+                    return None
+                self.log.emit(translate("log_warning", f"Error fetching post {post_id} (attempt {attempt}/{max_retries}): {str(e)}. Retrying..."), "WARNING")
+                for i in range(retry_delay_seconds, 0, -1):
+                    self.log.emit(translate("log_info", f"Trying again in {i}"), "INFO")
+                    time.sleep(1)
 
     def run(self):
         if not self.is_running:
