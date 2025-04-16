@@ -1,5 +1,6 @@
 # Kemono Downloader Release Notes
 
+
 ## v3.8.0 (16 Apr 2025)
 **feat: Add retry logic with countdown in post_downloader.py**
 - Implemented 5-attempt retry with customizable 5-second countdown in `post_downloader.py` for `fetch_and_detect_files`.
