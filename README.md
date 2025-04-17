@@ -88,7 +88,7 @@ Welcome to **Kemono Downloader**, a versatile Python-based desktop application b
 
 ### Disclaimer
 
-KemonoDownloader is a tool designed for personal and educational use only, to assist users in downloading content from Kemono.su. The maintainers of this project **do not condone or support the unauthorized distribution of copyrighted material**. Users are solely responsible for ensuring they have the legal right to access and download content from Kemono.su, and for complying with all applicable laws, as well as the terms of service of the original platforms from which the content originates (e.g., Patreon, Pixiv Fanbox, Gumroad). 
+KemonoDownloader is a tool designed for personal and educational use only, to assist users in downloading content from Kemono.su. The maintainers of this project **do not condone or support the unauthorized distribution of copyrighted material**. Users are solely responsible for ensuring they have the legal right to access and download content from Kemono.su, and for complying with all applicable laws, as well as the terms of service of the original platforms from which the content originates (e.g., Patreon, Pixiv Fanbox, Gumroad).
 
 **Misuse of this tool to infringe on creators’ rights, violate copyright laws, or breach terms of service is strictly prohibited.** The maintainers are not liable for any misuse of KemonoDownloader or any consequences arising from its use, including but not limited to legal action, financial loss, or damage to third parties.
 
@@ -109,10 +109,10 @@ We strongly encourage users to:
 
 ## Community Standards
 
-We are committed to fostering a welcoming and respectful community around KemonoDownloader. Please read our [Code of Conduct](CODE_OF_CONDUCT.md) to understand the standards we expect from all contributors and users. Key points include:
+We are committed to fostering a welcoming and respectful community around KemonoDownloader. Please read our [Code of Conduct](CODE_OF_CONDUCT.md) and [Security Policy](SECURITY.md) to understand the standards we expect from all contributors and users. Key points include:
 - Respecting the intellectual property rights of creators.
 - Refraining from using KemonoDownloader to engage in illegal activities, such as unauthorized distribution of copyrighted material.
-- Reporting any violations of the Code of Conduct to the maintainers via github, sourceforge or by opening a private issue labeled "Code of Conduct Violation."
+- Reporting any violations of the Code of Conduct or security issues to the maintainers via [izeno.contact@gmail.com](mailto:izeno.contact@gmail.com) or by opening a private issue labeled "Code of Conduct Violation" or "Security Violation."
 
 ## Table of Contents
 - [Important Notices](#important-notices)
@@ -132,6 +132,7 @@ We are committed to fostering a welcoming and respectful community around Kemono
 - [Releases](#releases)
 - [Support](#support)
 - [Contributing](#contributing)
+- [Security](#security)
 - [License](#license)
 - [Dependencies](#dependencies)
 
@@ -170,11 +171,11 @@ Kemono Downloader is now packaged using [Briefcase](https://briefcase.readthedoc
 5. Build the application:
    - **Windows**: `briefcase build windows`
    - **macOS**: `briefcase build macos`
-   - **Linux**: `briefcase build linux` 
+   - **Linux**: `briefcase build linux`
 6. Run the application:
    - **Windows**: `briefcase run windows`
    - **macOS**: `briefcase run macos`
-   - **Linux**: `briefcase run linux` 
+   - **Linux**: `briefcase run linux`
    - **Note**: An internet connection is required to fetch content from Kemono.su.
 
 ### Pre-Compiled Binaries
@@ -257,7 +258,10 @@ Here are previews of the main tabs in Kemono Downloader:
 For ways to get help, report issues, or support the project’s development, please see the [Support page](SUPPORT.md).
 
 ## Contributing
-Kemono Downloader is open-source, and contributions are encouraged! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details on how to get involved, submit pull requests, and suggest features. All contributors are expected to adhere to our [Code of Conduct](CODE_OF_CONDUCT.md).
+Kemono Downloader is open-source, and contributions are encouraged! Please read our [Contributing Guidelines](CONTRIBUTING.md), [Code of Conduct](CODE_OF_CONDUCT.md), and [Security Policy](SECURITY.md) before submitting issues or pull requests. Use the appropriate [issue templates](.github/ISSUE_TEMPLATE/) for reporting bugs, suggesting features, or other contributions, and the [Pull Request template](.github/PULL_REQUEST_TEMPLATE.md) for code submissions.
+
+## Security
+If you discover a security vulnerability, please follow our [Security Policy](SECURITY.md) by emailing [izeno.contact@gmail.com](mailto:izeno.contact@gmail.com) or using the [Security Report issue template](.github/ISSUE_TEMPLATE/security_report.yml) for non-sensitive issues.
 
 ## License
 This project is licensed under the [MIT License](LICENSE). Use, modify, and distribute it freely per the license terms.

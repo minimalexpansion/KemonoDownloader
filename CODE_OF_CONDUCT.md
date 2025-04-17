@@ -24,6 +24,8 @@ Examples of unacceptable behavior include:
 - Publishing others' private information, such as physical or email addresses, without their explicit permission ("doxing").
 - Engaging in or promoting illegal activities, including the unauthorized distribution of copyrighted material.
 - Using KemonoDownloader to download or distribute content in violation of copyright laws or the terms of service of platforms like Patreon, Pixiv Fanbox, or Gumroad.
+- Sharing unverified links or promotional content, as outlined in our [Contributing Guidelines](CONTRIBUTING.md).
+- Publicly disclosing security vulnerabilities without coordination, as outlined in our [Security Policy](SECURITY.md).
 - Other conduct which could reasonably be considered inappropriate in a professional setting.
 
 Given that KemonoDownloader interacts with content from Kemono.su, we expect all participants to respect the intellectual property rights of creators and adhere to ethical standards when using the tool. Misuse of the tool to harm creators or violate their rights will not be tolerated.
@@ -34,7 +36,7 @@ This Code of Conduct applies to all project spaces, including the GitHub reposit
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project maintainers at [izeno.contact@gmail.com](mailto:izeno.contact@gmail.com). Alternatively, you can open a private issue in the repository labeled "Code of Conduct Violation," which will be visible only to maintainers.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project maintainers at [izeno.contact@gmail.com](mailto:izeno.contact@gmail.com). Alternatively, you can open a private issue in the repository labeled "Code of Conduct Violation," which will be visible only to maintainers. For security-related issues, please follow the reporting guidelines in our [Security Policy](SECURITY.md).
 
 All complaints will be reviewed and investigated promptly and fairly. The project maintainers are obligated to maintain confidentiality with regard to the reporter of an incident. The maintainers will determine the appropriate response, which may include:
 
@@ -52,7 +54,7 @@ The maintainers will consider the following community impact guidelines when det
   **Consequence**: A private warning, with an opportunity to correct the behavior.
 - **Moderate Violation**: A single incident or series of actions that violate community standards.  
   **Consequence**: A warning with a temporary ban if the behavior continues.
-- **Severe Violation**: Sustained inappropriate behavior, harassment, or actions that harm the community (e.g., promoting illegal use of the tool).  
+- **Severe Violation**: Sustained inappropriate behavior, harassment, or actions that harm the community (e.g., promoting illegal use of the tool, public disclosure of security vulnerabilities).  
   **Consequence**: A permanent ban from the project.
 
 ## Attribution
