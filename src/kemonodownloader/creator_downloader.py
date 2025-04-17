@@ -1,4 +1,5 @@
 import os
+import re
 import hashlib
 import requests
 import json
@@ -467,6 +468,24 @@ class FilePreparationThread(QThread):
             self.log.emit(translate("log_debug", f"Total files to download: {len(files_to_download)}"), "INFO")
             self.finished.emit(files_to_download, files_to_posts_map)
 
+def sanitize_filename(name, max_length=100):
+    """Sanitize a filename by removing invalid characters and limiting length."""
+    if not name:
+        return "unnamed"
+    # Remove invalid characters
+    sanitized = re.sub(r'[<>:"/\\|?*]', '_', name)
+    # Replace spaces with underscores
+    sanitized = sanitized.replace(' ', '_')
+    # Remove multiple consecutive underscores
+    sanitized = re.sub(r'_+', '_', sanitized)
+    # Trim leading/trailing underscores
+    sanitized = sanitized.strip('_')
+    # Limit length
+    if len(sanitized) > max_length:
+        sanitized = sanitized[:max_length]
+    # Ensure non-empty
+    return sanitized if sanitized else "unnamed"
+
 class CreatorDownloadThread(QThread):
     file_progress = pyqtSignal(int, int) 
     file_completed = pyqtSignal(int, str)  
@@ -490,6 +509,8 @@ class CreatorDownloadThread(QThread):
         self.max_concurrent = max_concurrent
         self.post_files_map = self.build_post_files_map()
         self.completed_files = set()
+        self.post_titles = {}  # Store post titles
+        self.creator_name = None  # Store creator name
 
     def build_post_files_map(self):
         post_files_map = {post_id: [] for post_id in self.selected_posts}
@@ -518,6 +539,34 @@ class CreatorDownloadThread(QThread):
         except IOError as e:
             self.log.emit(translate("log_error", f"Failed to save file hashes: {str(e)}"), "ERROR")
 
+    def fetch_creator_and_post_info(self):
+        """Fetch creator name and post titles."""
+        api_url = f"{API_BASE}/{self.service}/user/{self.creator_id}"
+        try:
+            response = requests.get(api_url, headers=HEADERS, timeout=10)
+            if response.status_code == 200:
+                posts_data = response.json()
+                if isinstance(posts_data, list):
+                    for post in posts_data:
+                        post_id = post.get('id')
+                        title = post.get('title', f"Post_{post_id}")
+                        self.post_titles[post_id] = sanitize_filename(title)
+                # Fetch creator name
+                profile_url = f"{API_BASE}/{self.service}/user/{self.creator_id}/profile"
+                profile_response = requests.get(profile_url, headers=HEADERS, timeout=10)
+                if profile_response.status_code == 200:
+                    profile_data = profile_response.json()
+                    self.creator_name = sanitize_filename(profile_data.get('name', 'Unknown_Creator'))
+                else:
+                    self.creator_name = "Unknown_Creator"
+                    self.log.emit(translate("log_warning", f"Failed to fetch creator name, using default: {self.creator_name}"), "WARNING")
+            else:
+                self.log.emit(translate("log_error", f"Failed to fetch posts for creator {self.creator_id} - Status code: {response.status_code}"), "ERROR")
+                self.creator_name = "Unknown_Creator"
+        except requests.RequestException as e:
+            self.log.emit(translate("log_error", f"Error fetching creator/post info: {str(e)}"), "ERROR")
+            self.creator_name = "Unknown_Creator"
+
     def stop(self):
         self.is_running = False
 
@@ -527,8 +576,14 @@ class CreatorDownloadThread(QThread):
             return
 
         post_id = self.files_to_posts_map.get(file_url, self.creator_id)
-        post_folder = os.path.join(folder, post_id)
-        os.makedirs(post_folder, exist_ok=True)
+        post_title = self.post_titles.get(post_id, f"Post_{post_id}")
+        post_folder_name = f"{post_id}_{post_title}"
+        post_folder = os.path.join(folder, post_folder_name)
+        try:
+            os.makedirs(post_folder, exist_ok=True)
+        except OSError as e:
+            self.log.emit(translate("log_error", f"Failed to create post folder {post_folder}: {str(e)}"), "ERROR")
+            return
 
         filename = file_url.split('f=')[-1] if 'f=' in file_url else file_url.split('/')[-1].split('?')[0]
         full_path = os.path.join(post_folder, filename.replace('/', '_'))
@@ -585,16 +640,15 @@ class CreatorDownloadThread(QThread):
                 self.log.emit(translate("log_info", translate("successfully_downloaded", full_path)), "INFO")
                 self.completed_files.add(file_url)
                 self.check_post_completion(file_url)
-                return  # Success, exit the method
+                return
 
             except Exception as e:
                 if attempt == max_retries:
                     self.log.emit(translate("log_error", translate("error_downloading_after_retries", file_url, max_retries, str(e))), "ERROR")
                     self.file_progress.emit(file_index, 0)
-                    return  # All retries failed, proceed to next file
+                    return
                 else:
                     self.log.emit(translate("log_warning", translate("download_failed_retrying", file_url, attempt, max_retries, str(e))), "WARNING")
-                    # Countdown for retry delay
                     for i in range(3, 0, -1):
                         if not self.is_running:
                             self.log.emit(translate("log_info", f"Retry for {file_url} cancelled during countdown"), "INFO")
@@ -614,11 +668,19 @@ class CreatorDownloadThread(QThread):
         if not self.is_running:
             return
         self.log.emit(translate("log_info", f"CreatorDownloadThread started for service: {self.service}, creator_id: {self.creator_id}"), "INFO")
+        self.fetch_creator_and_post_info()  # Fetch creator and post info before starting
         total_posts = len(self.selected_posts)
         self.log.emit(translate("log_info", f"Total posts: {total_posts}"), "INFO")
 
-        creator_folder = os.path.join(self.download_folder, self.creator_id)
-        os.makedirs(creator_folder, exist_ok=True)
+        creator_folder_name = f"{self.creator_id}_{self.creator_name}"
+        creator_folder = os.path.join(self.download_folder, creator_folder_name)
+        try:
+            os.makedirs(creator_folder, exist_ok=True)
+        except OSError as e:
+            self.log.emit(translate("log_error", f"Failed to create creator folder {creator_folder}: {str(e)}"), "ERROR")
+            self.finished.emit()
+            return
+
         self.log.emit(translate("log_info", f"Created directory: {creator_folder}"), "INFO")
 
         total_files = len(self.files_to_download)

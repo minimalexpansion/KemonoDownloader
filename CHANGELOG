@@ -1,5 +1,11 @@
 # Kemono Downloader Release Notes
 
+## v3.9.0 (17 Apr 2025)
+**feat: Add {id}\_{post_title} and {id}\_{creator_name} folder naming for downloaders**
+- Implemented `{id}_{post_title}` folder naming in `post_downloader.py`
+- Implemented `{id}_{creator_name}` and `{id}_{post_title}` folder naming in `creator_downloader.py`
+- Added methods to fetch post titles, creator names, and sanitize filenames
+- Updated download logic for consistent file organization
 
 ## v3.8.0 (16 Apr 2025)
 **feat: Add retry logic with countdown in post_downloader.py**

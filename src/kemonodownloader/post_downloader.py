@@ -1,4 +1,5 @@
 import os
+import re
 import hashlib
 import requests
 import json
@@ -744,6 +745,24 @@ class FilePreparationThread(QThread):
         else:
             self.log.emit(translate("log_info", "FilePreparationThread stopped before emitting results"), "INFO")
 
+def sanitize_filename(name, max_length=100):
+    """Sanitize a filename by removing invalid characters and limiting length."""
+    if not name:
+        return "unnamed"
+    # Remove invalid characters
+    sanitized = re.sub(r'[<>:"/\\|?*]', '_', name)
+    # Replace spaces with underscores
+    sanitized = sanitized.replace(' ', '_')
+    # Remove multiple consecutive underscores
+    sanitized = re.sub(r'_+', '_', sanitized)
+    # Trim leading/trailing underscores
+    sanitized = sanitized.strip('_')
+    # Limit length
+    if len(sanitized) > max_length:
+        sanitized = sanitized[:max_length]
+    # Ensure non-empty
+    return sanitized if sanitized else "unnamed"
+
 class DownloadThread(QThread):
     file_progress = pyqtSignal(int, int)
     file_completed = pyqtSignal(int, str)
@@ -767,6 +786,28 @@ class DownloadThread(QThread):
         self.service = self.extract_service_from_url(url)
         self.post_files_map = self.build_post_files_map()
         self.completed_files = set()
+        self.post_title = None  # Store post title
+
+    def fetch_post_info(self):
+        """Fetch post title."""
+        parts = self.url.split('/')
+        if len(parts) < 7 or 'kemono.su' not in self.url:
+            self.log.emit(translate("log_error", "Invalid URL format for fetching post info"), "ERROR")
+            return
+        service, creator_id, post_id = parts[-5], parts[-3], parts[-1]
+        api_url = f"{API_BASE}/{service}/user/{creator_id}/post/{post_id}"
+        try:
+            response = requests.get(api_url, headers=HEADERS, timeout=10)
+            if response.status_code == 200:
+                post_data = response.json()
+                post = post_data if isinstance(post_data, dict) and 'post' not in post_data else post_data.get('post', {})
+                self.post_title = sanitize_filename(post.get('title', f"Post_{post_id}"))
+            else:
+                self.log.emit(translate("log_error", f"Failed to fetch post title - Status code: {response.status_code}"), "ERROR")
+                self.post_title = f"Post_{post_id}"
+        except requests.RequestException as e:
+            self.log.emit(translate("log_error", f"Error fetching post info: {str(e)}"), "ERROR")
+            self.post_title = f"Post_{post_id}"
 
     def extract_service_from_url(self, url):
         parts = url.split('/')
@@ -812,7 +853,8 @@ class DownloadThread(QThread):
 
         post_id = self.files_to_posts_map.get(file_url, self.post_id)
         service_folder = os.path.join(folder, self.service)
-        post_folder = os.path.join(service_folder, f"post_{post_id}")
+        post_folder_name = f"{post_id}_{self.post_title}"
+        post_folder = os.path.join(service_folder, post_folder_name)
         os.makedirs(post_folder, exist_ok=True)
 
         filename = file_url.split('f=')[-1] if 'f=' in file_url else file_url.split('/')[-1].split('?')[0]
@@ -824,7 +866,7 @@ class DownloadThread(QThread):
             if hash_key == url_hash:
                 existing_path = self.file_hashes[hash_key]["file_path"]
                 if os.path.exists(existing_path):
-                    with open(existing_path, 'rb') as f:  # Fixed resource leak
+                    with open(existing_path, 'rb') as f:
                         file_hash = hashlib.md5(f.read()).hexdigest()
                     stored_hash = self.file_hashes[hash_key]["file_hash"]
                     if file_hash == stored_hash:
@@ -859,7 +901,7 @@ class DownloadThread(QThread):
                             if progress == 100:
                                 self.file_completed.emit(file_index, file_url)
 
-                with open(full_path, 'rb') as f:  # Fixed resource leak
+                with open(full_path, 'rb') as f:
                     file_hash = hashlib.md5(f.read()).hexdigest()
                 self.file_hashes[url_hash] = {
                     "file_path": full_path,
@@ -870,16 +912,15 @@ class DownloadThread(QThread):
                 self.log.emit(translate("log_info", translate("successfully_downloaded", full_path)), "INFO")
                 self.completed_files.add(file_url)
                 self.check_post_completion(file_url)
-                return  # Success, exit the method
+                return
 
             except Exception as e:
                 if attempt == max_retries:
                     self.log.emit(translate("log_error", translate("error_downloading_after_retries", file_url, max_retries, str(e))), "ERROR")
                     self.file_progress.emit(file_index, 0)
-                    return  # All retries failed, proceed to next file
+                    return
                 else:
                     self.log.emit(translate("log_warning", translate("download_failed_retrying", file_url, attempt, max_retries, str(e))), "WARNING")
-                    # Countdown for retry delay
                     for i in range(3, 0, -1):
                         if not self.is_running:
                             self.log.emit(translate("log_info", f"Retry for {file_url} cancelled during countdown"), "INFO")
@@ -898,6 +939,7 @@ class DownloadThread(QThread):
 
     def run(self):
         self.log.emit(translate("log_info", f"DownloadThread started with URL: {self.url}"), "INFO")
+        self.fetch_post_info()  # Fetch post title before starting
         service_folder = os.path.join(self.download_folder, self.service)
         os.makedirs(service_folder, exist_ok=True)
         self.log.emit(translate("log_info", f"Created directory: {service_folder}"), "INFO")
