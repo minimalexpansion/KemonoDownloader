@@ -2,6 +2,14 @@
 
 Thank you for your interest in contributing to KemonoDownloader! We welcome contributions from the community to help improve this tool for downloading content from Kemono.su. Whether you’re fixing bugs, adding features, or improving documentation, your efforts are greatly appreciated.
 
+## Community Guidelines
+To maintain a safe and productive environment, please adhere to the following rules:
+- **No Spam or Unverified Links**: Do not post links to unverified or external tools, as they may pose security risks. Such actions will be considered spam and may lead to removal of comments or restrictions on your contributions.
+- **Provide Constructive Feedback**: When reporting issues, include detailed information, reproducible steps, or code samples. Avoid vague or promotional content.
+- **Respect the Community**: Be respectful in all interactions.
+
+Violations of these guidelines may result in warnings, removal of comments, temporary or permanent bans from contributing, or reporting to GitHub for further action.
+
 ## How to Contribute
 
 ### 1. Follow the Code of Conduct
