@@ -388,7 +388,7 @@ class FilePreparationThread(QThread):
         parts = creator_url.split('/')
         service, creator_id = parts[-3], parts[-1]
         api_url = f"{API_BASE}/{service}/user/{creator_id}/post/{post_id}"
-        max_retries = 5
+        max_retries = 50
         retry_delay_seconds = 5
         for attempt in range(1, max_retries + 1):
             try:
@@ -542,29 +542,49 @@ class CreatorDownloadThread(QThread):
     def fetch_creator_and_post_info(self):
         """Fetch creator name and post titles."""
         api_url = f"{API_BASE}/{self.service}/user/{self.creator_id}"
-        try:
-            response = requests.get(api_url, headers=HEADERS, timeout=10)
-            if response.status_code == 200:
-                posts_data = response.json()
-                if isinstance(posts_data, list):
+        offset = 0
+        page_size = 50
+        max_attempts = 200
+        attempt = 1
+
+        while attempt <= max_attempts and self.is_running:
+            paginated_url = f"{api_url}?o={offset}"
+            try:
+                response = requests.get(paginated_url, headers=HEADERS, timeout=10)
+                if response.status_code == 200:
+                    posts_data = response.json()
+                    if not isinstance(posts_data, list):
+                        self.log.emit(translate("log_error", "Invalid posts data returned! Response: " + json.dumps(posts_data, indent=2)), "ERROR")
+                        break
                     for post in posts_data:
                         post_id = post.get('id')
                         title = post.get('title', f"Post_{post_id}")
                         self.post_titles[post_id] = sanitize_filename(title)
-                # Fetch creator name
-                profile_url = f"{API_BASE}/{self.service}/user/{self.creator_id}/profile"
-                profile_response = requests.get(profile_url, headers=HEADERS, timeout=10)
-                if profile_response.status_code == 200:
-                    profile_data = profile_response.json()
-                    self.creator_name = sanitize_filename(profile_data.get('name', 'Unknown_Creator'))
+                    if not posts_data:
+                        self.log.emit(translate("log_info", f"No more posts to fetch at offset {offset}. Stopping pagination."), "INFO")
+                        break
+                    offset += page_size
+                    attempt += 1
+                    time.sleep(0.5)
                 else:
-                    self.creator_name = "Unknown_Creator"
-                    self.log.emit(translate("log_warning", f"Failed to fetch creator name, using default: {self.creator_name}"), "WARNING")
+                    self.log.emit(translate("log_error", f"Failed to fetch posts for creator {self.creator_id} - Status code: {response.status_code}"), "ERROR")
+                    break
+            except requests.RequestException as e:
+                self.log.emit(translate("log_error", f"Error fetching posts at offset {offset}: {str(e)}"), "ERROR")
+                break
+
+        # Fetch creator name
+        profile_url = f"{API_BASE}/{self.service}/user/{self.creator_id}/profile"
+        try:
+            profile_response = requests.get(profile_url, headers=HEADERS, timeout=10)
+            if profile_response.status_code == 200:
+                profile_data = profile_response.json()
+                self.creator_name = sanitize_filename(profile_data.get('name', 'Unknown_Creator'))
             else:
-                self.log.emit(translate("log_error", f"Failed to fetch posts for creator {self.creator_id} - Status code: {response.status_code}"), "ERROR")
                 self.creator_name = "Unknown_Creator"
+                self.log.emit(translate("log_warning", f"Failed to fetch creator name, using default: {self.creator_name}"), "WARNING")
         except requests.RequestException as e:
-            self.log.emit(translate("log_error", f"Error fetching creator/post info: {str(e)}"), "ERROR")
+            self.log.emit(translate("log_error", f"Error fetching creator name: {str(e)}"), "ERROR")
             self.creator_name = "Unknown_Creator"
 
     def stop(self):
@@ -607,7 +627,7 @@ class CreatorDownloadThread(QThread):
 
         self.log.emit(translate("log_info", translate("starting_download", file_index + 1, total_files, file_url, post_folder)), "INFO")
         
-        max_retries = 5
+        max_retries = 50
         for attempt in range(1, max_retries + 1):
             try:
                 response = requests.get(file_url, headers=HEADERS, stream=True)

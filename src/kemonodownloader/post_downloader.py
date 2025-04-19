@@ -675,7 +675,7 @@ class FilePreparationThread(QThread):
         parts = post_url.split('/')
         service, creator_id = parts[-5], parts[-3]
         api_url = f"{API_BASE}/{service}/user/{creator_id}/post/{post_id}"
-        max_retries = 5
+        max_retries = 50
         retry_delay_seconds = 5
         for attempt in range(1, max_retries + 1):
             try:
@@ -879,7 +879,7 @@ class DownloadThread(QThread):
 
         self.log.emit(translate("log_info", translate("starting_download", file_index + 1, total_files, file_url, post_folder)), "INFO")
         
-        max_retries = 5
+        max_retries = 50
         for attempt in range(1, max_retries + 1):
             try:
                 response = requests.get(file_url, headers=HEADERS, stream=True)

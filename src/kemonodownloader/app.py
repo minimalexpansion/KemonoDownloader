@@ -16,7 +16,7 @@ from kemonodownloader.kd_settings import SettingsTab
 from kemonodownloader.kd_help import HelpTab
 from kemonodownloader.kd_language import translate, language_manager
 
-CURRENT_VERSION = "3.9.0"
+CURRENT_VERSION = "3.9.1"
 GITHUB_REPO = "VoxDroid/KemonoDownloader"
 
 class VersionChecker(QThread):
