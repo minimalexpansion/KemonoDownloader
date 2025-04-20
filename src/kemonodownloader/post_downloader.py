@@ -746,7 +746,7 @@ class FilePreparationThread(QThread):
             self.log.emit(translate("log_info", "FilePreparationThread stopped before emitting results"), "INFO")
 
 def sanitize_filename(name, max_length=100):
-    """Sanitize a filename by removing invalid characters and limiting length."""
+    """Sanitize a filename by removing invalid characters, trailing dots, and limiting length."""
     if not name:
         return "unnamed"
     # Remove invalid characters
@@ -755,11 +755,13 @@ def sanitize_filename(name, max_length=100):
     sanitized = sanitized.replace(' ', '_')
     # Remove multiple consecutive underscores
     sanitized = re.sub(r'_+', '_', sanitized)
+    # Remove trailing dots (Windows compatibility)
+    sanitized = sanitized.rstrip('.')
     # Trim leading/trailing underscores
     sanitized = sanitized.strip('_')
     # Limit length
     if len(sanitized) > max_length:
-        sanitized = sanitized[:max_length]
+        sanitized = sanitized[:max_length].rstrip('.').strip('_')
     # Ensure non-empty
     return sanitized if sanitized else "unnamed"
 

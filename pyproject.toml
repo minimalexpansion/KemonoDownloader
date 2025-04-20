@@ -1,7 +1,7 @@
 [tool.briefcase]
 project_name = "Kemono Downloader"
 bundle = "com.voxdroid"
-version = "3.9.1"
+version = "4.0.0"
 url = "https://github.com/VoxDroid/KemonoDownloader"
 license.file = "LICENSE"
 author = "VoxDroid"
@@ -29,7 +29,9 @@ requires = [
     "qtawesome",
     "packaging",
     "pillow",
-    "fake-useragent"
+    "fake-useragent",
+    "aiohttp",
+    "asyncio"
 ]
 
 test_requires = [

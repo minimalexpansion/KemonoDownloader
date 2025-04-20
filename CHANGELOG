@@ -1,5 +1,30 @@
 # Kemono Downloader Release Notes
 
+## v4.0.0 (20 Apr 2025)
+**feat: Overhaul CreatorDownloaderTab with async downloads and better error tracking**
+Revamped `CreatorDownloaderTab` and `CreatorDownloadThread` to use async downloads, track failed files better, and log more details for debugging.
+- Added `asyncio`, `aiohttp`, `ClientSession`, and `ClientTimeout` imports for async downloads.
+- Switched `CreatorDownloadThread` to async with `aiohttp` for faster, smoother batch downloading.
+- Removed "Download All Links" checkbox to focus on manual post selection.
+- Added `self.failed_files` to `CreatorDownloaderTab` and `CreatorDownloadThread` to track failed files centrally.
+- Improved `cleanup_thread`:
+  - Logs thread removal and failed file transfers.
+  - Moves failed files from `CreatorDownloadThread` to `self.failed_files`.
+  - Counts failed files in completion check.
+  - Cleans up leftover threads with better error handling.
+  - Logs failed files and active threads.
+- Updated `update_file_completion`:
+  - Safely checks threads for failed file errors, defaults to "Unknown error".
+  - Stores failed files in `self.failed_files`.
+  - Adds `success` parameter to handle failures.
+  - Triggers `creator_download_finished` when all files are done.
+- Enhanced `CreatorDownloadThread`:
+  - Fetches creator names and post titles for better folder naming.
+  - Logs detailed download progress and errors.
+- Added failed file summary in `creator_download_finished` for clearer feedback.
+- Made console logs clearer, no more cluttered tracebacks.
+- Remove trailing dots (Windows compatibility - sanitization for folder naming convention)
+
 ## v3.9.1 (19 Apr 2025)
 **fix: Ensure consistent post folder naming with {post_id}_{post_title} for all offsets**
 Fixes the issue where post folders were named `{post_id}_Post_{post_id}` for posts beyond the first 50 due to missing pagination in title fetching.

@@ -6,3 +6,5 @@ packaging
 pillow
 briefcase
 fake-useragent
+aiohttp
+asyncio
