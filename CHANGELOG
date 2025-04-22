@@ -23,7 +23,7 @@ Revamped `CreatorDownloaderTab` and `CreatorDownloadThread` to use async downloa
   - Logs detailed download progress and errors.
 - Added failed file summary in `creator_download_finished` for clearer feedback.
 - Made console logs clearer, no more cluttered tracebacks.
-- Remove trailing dots (Windows compatibility - sanitization for folder naming convention) for both `Creator Downloader` and `Post Downloader`
+- Remove trailing dots (Windows compatibility - sanitization for folder naming convention) for both `Creator Downloader` and `Post Downloader`.
 
 ## v3.9.1 (19 Apr 2025)
 **fix: Ensure consistent post folder naming with {post_id}_{post_title} for all offsets**
