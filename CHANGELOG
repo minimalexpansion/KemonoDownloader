@@ -1,5 +1,9 @@
 # Kemono Downloader Release Notes
 
+## v4.1.0. (07 May 2025)
+**feat: Partial Localization for Simplified Chinese**
+- [#15](https://github.com/VoxDroid/KemonoDownloader/pull/15) [detached64/feature/zh-CN-localization](https://github.com/VoxDroid/KemonoDownloader/commit/8ad2cb2bb54de2a2e50c983959eb3df1fff0ed67)
+
 ## v4.0.0 (20 Apr 2025)
 **feat: Overhaul CreatorDownloaderTab with async downloads and better error tracking**
 Revamped `CreatorDownloaderTab` and `CreatorDownloadThread` to use async downloads, track failed files better, and log more details for debugging.
