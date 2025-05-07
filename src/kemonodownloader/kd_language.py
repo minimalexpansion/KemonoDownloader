@@ -2,7 +2,7 @@ class KDLanguage:
     """
     Language management class for Kemono Downloader.
     Provides translations for all text in the application.
-    Supports English (default), Japanese, and Korean.
+    Supports English (default), Japanese, Korean and Simplified Chinese.
     """
     
     def __init__(self):
@@ -12,17 +12,20 @@ class KDLanguage:
             "download_failed_retrying": {
                 "english": "Download failed for {0}, attempt {1}/{2}: {3}",
                 "japanese": "{0}のダウンロードに失敗しました、試行{1}/{2}：{3}",
-                "korean": "{0} 다운로드 실패, 시도 {1}/{2}: {3}"
+                "korean": "{0} 다운로드 실패, 시도 {1}/{2}: {3}",
+                "chinese-simplified": "{0}下载失败，尝试 {1}/{2}: {3}"
             },
             "error_downloading_after_retries": {
                 "english": "Failed to download {0} after {1} retries: {2}",
                 "japanese": "{1}回の試行後に{0}のダウンロードに失敗しました：{2}",
-                "korean": "{1}번의 시도 후 {0} 다운로드 실패: {2}"
+                "korean": "{1}번의 시도 후 {0} 다운로드 실패: {2}",
+                "chinese-simplified": "尝试 {1} 次后下载 {0} 失败: {2}"
             },
             "retry_countdown": {
                 "english": "Trying again in {0}...",
                 "japanese": "{0}秒後に再試行します...",
-                "korean": "{0}초 후 다시 시도..."
+                "korean": "{0}초 후 다시 시도...",
+                "chinese-simplified": "{0}秒后重试..."
             },
             
             # Reset to defaults translation
@@ -30,783 +33,939 @@ class KDLanguage:
                 "english" : "Reset to Defaults",
                 "japanese" : "デフォルトにリセット",
                 "korean" : "기본값으로 재설정",
+                "chinese-simplified" : "重置为默认值"
             },
             "confirm_reset_message" : {
                 "english" : "Are you sure you want to reset all settings to their default values?",
                 "japanese" : "すべての設定をデフォルト値にリセットしてもよろしいですか？",
                 "korean" : "모든 설정을 기본값으로 재설정하시겠습니까?",
+                "chinese-simplified" : "您确定要将所有设置重置为默认值吗？"
             },
             "settings_reset_message" : {
                 "english" : "Settings have been reset to defaults. Click 'Apply Changes' to save them.",
                 "japanese" : "設定がデフォルトにリセットされました。'変更を適用'をクリックして保存してください。",
                 "korean" : "설정이 기본값으로 재설정되었습니다. '변경 적용'을 클릭하여 저장하세요.",
+                "chinese-simplified" : "设置已重置为默认值。单击“应用更改”以保存它们。"
             },
             
             # For post_downloader.py fallback validation
             "first_validation_failed": {
                 "english": "First validation method failed for {0}, trying fallback method...",
                 "japanese": "最初の検証方法が {0} で失敗しました、フォールバック方法を試しています...",
-                "korean": "첫 번째 검증 방법이 {0}에 대해 실패했습니다, 대체 방법을 시도 중..."
+                "korean": "첫 번째 검증 방법이 {0}에 대해 실패했습니다, 대체 방법을 시도 중...",
+                "chinese-simplified": "第一次验证方法失败。尝试备用方法..."
             },
             "first_validation_failed_exception": {
                 "english": "First validation method failed with exception for {0}, trying fallback method...",
                 "japanese": "最初の検証方法が {0} で例外で失敗しました、フォールバック方法を試しています...",
-                "korean": "첫 번째 검증 방법이 {0}에 대해 예외로 실패했습니다, 대체 방법을 시도 중..."
+                "korean": "첫 번째 검증 방법이 {0}에 대해 예외로 실패했습니다, 대체 방법을 시도 중...",
+                "chinese-simplified": "第一次验证方法失败：{0}尝试备用方法..."
             },
             "attempting_fallback_validation": {
                 "english": "Attempting fallback validation for {0}",
                 "japanese": "{0} のフォールバック検証を試みています",
-                "korean": "{0}에 대한 대체 검증 시도 중"
+                "korean": "{0}에 대한 대체 검증 시도 중",
+                "chinese-simplified": "尝试备用验证：{0}"
             },
             "url_validated_fallback": {
                 "english": "URL validated using fallback method: {0}",
                 "japanese": "フォールバック方法を使用してURLが検証されました: {0}",
-                "korean": "대체 방법을 사용하여 URL이 검증됨: {0}"
+                "korean": "대체 방법을 사용하여 URL이 검증됨: {0}",
+                "chinese-simplified": "使用备用方法验证的 URL：{0}"
             },
             "fallback_validation_failed": {
                 "english": "Fallback validation failed with exception: {0}",
                 "japanese": "フォールバック検証が例外で失敗しました: {0}",
-                "korean": "대체 검증이 예외로 실패했습니다: {0}"
+                "korean": "대체 검증이 예외로 실패했습니다: {0}",
+                "chinese-simplified": "备用验证失败：{0}"
             },
 
             # For creator_downloader.py fallback validation
             "first_validation_failed": {
                 "english": "First validation method failed for {0}, trying fallback method...",
                 "japanese": "最初の検証方法が {0} で失敗しました、フォールバック方法を試しています...",
-                "korean": "첫 번째 검증 방법이 {0}에 대해 실패했습니다, 대체 방법을 시도 중..."
+                "korean": "첫 번째 검증 방법이 {0}에 대해 실패했습니다, 대체 방법을 시도 중...",
+                "chinese-simplified": "第一次验证方法失败。尝试备用方法..."
             },
             "first_validation_failed_exception": {
                 "english": "First validation method failed with exception for {0}, trying fallback method...",
                 "japanese": "最初の検証方法が {0} で例外で失敗しました、フォールバック方法を試しています...",
-                "korean": "첫 번째 검증 방법이 {0}에 대해 예외로 실패했습니다, 대체 방법을 시도 중..."
+                "korean": "첫 번째 검증 방법이 {0}에 대해 예외로 실패했습니다, 대체 방법을 시도 중...",
+                "chinese-simplified": "第一次验证方法失败：{0}尝试备用方法..."
             },
             "attempting_fallback_validation": {
                 "english": "Attempting fallback validation for {0}",
                 "japanese": "{0} のフォールバック検証を試みています",
-                "korean": "{0}에 대한 대체 검증 시도 중"
+                "korean": "{0}에 대한 대체 검증 시도 중",
+                "chinese-simplified": "尝试备用验证：{0}"
             },
             "url_validated_fallback": {
                 "english": "URL validated using fallback method: {0}",
                 "japanese": "フォールバック方法を使用してURLが検証されました: {0}",
-                "korean": "대체 방법을 사용하여 URL이 검증됨: {0}"
+                "korean": "대체 방법을 사용하여 URL이 검증됨: {0}",
+                "chinese-simplified": "使用备用方法验证的 URL：{0}"
             },
             "fallback_validation_failed": {
                 "english": "Fallback validation failed with exception: {0}",
                 "japanese": "フォールバック検証が例外で失敗しました: {0}",
-                "korean": "대체 검증이 예외로 실패했습니다: {0}"
+                "korean": "대체 검증이 예외로 실패했습니다: {0}",
+                "chinese-simplified": "备用验证失败：{0}"
             },
             
             # Main window and common elements
             "app_title": {
                 "english": "Kemono Downloader",
                 "japanese": "ケモノダウンローダー",
-                "korean": "케모노 다운로더"
+                "korean": "케모노 다운로더",
+                "chinese-simplified": "Kemono 下载器"
             },
             "developed_by": {
                 "english": "Developed by VoxDroid",
                 "japanese": "開発者: VoxDroid",
-                "korean": "개발자: VoxDroid"
+                "korean": "개발자: VoxDroid",
+                "chinese-simplified": "开发者: VoxDroid"
             },
             "launch_button": {
                 "english": "Launch Application",
                 "japanese": "アプリケーションを起動",
-                "korean": "애플리케이션 시작"
+                "korean": "애플리케이션 시작",
+                "chinese-simplified": "启动应用程序"
             },
             "idle": {
                 "english": "Idle",
                 "japanese": "アイドル",
-                "korean": "대기 중"
+                "korean": "대기 중",
+                "chinese-simplified": "空闲"
             },
             
             # Tab names
             "post_downloader_tab": {
                 "english": "Post Downloader",
                 "japanese": "投稿ダウンローダー",
-                "korean": "게시물 다운로더"
+                "korean": "게시물 다운로더",
+                "chinese-simplified": "投稿下载器"
             },
             "creator_downloader_tab": {
                 "english": "Creator Downloader",
                 "japanese": "クリエイターダウンローダー",
-                "korean": "크리에이터 다운로더"
+                "korean": "크리에이터 다운로더",
+                "chinese-simplified": "创作者下载器"
             },
             "settings_tab": {
                 "english": "Settings",
                 "japanese": "設定",
-                "korean": "설정"
+                "korean": "설정",
+                "chinese-simplified": "设置"
             },
             "help_tab": {
                 "english": "Help",
                 "japanese": "ヘルプ",
-                "korean": "도움말"
+                "korean": "도움말",
+                "chinese-simplified": "帮助"
             },
             
             # Common buttons and actions
             "add_to_queue": {
                 "english": "Add to Queue",
                 "japanese": "キューに追加",
-                "korean": "대기열에 추가"
+                "korean": "대기열에 추가",
+                "chinese-simplified": "添加到队列"
             },
             "download": {
                 "english": "Download",
                 "japanese": "ダウンロード",
-                "korean": "다운로드"
+                "korean": "다운로드",
+                "chinese-simplified": "下载"
             },
             "cancel": {
                 "english": "Cancel",
                 "japanese": "キャンセル",
-                "korean": "취소"
+                "korean": "취소",
+                "chinese-simplified": "取消"
             },
             "apply_changes": {
                 "english": "Apply Changes",
                 "japanese": "変更を適用",
-                "korean": "변경 적용"
+                "korean": "변경 적용",
+                "chinese-simplified": "应用更改"
             },
             "browse": {
                 "english": "Browse",
                 "japanese": "参照",
-                "korean": "찾아보기"
+                "korean": "찾아보기",
+                "chinese-simplified": "浏览"
             },
             
             # Post Downloader tab
             "enter_post_url": {
                 "english": "Enter post URL (e.g., https://kemono.su/patreon/user/12345678/post/123456789)",
                 "japanese": "投稿URLを入力 (例: https://kemono.su/patreon/user/12345678/post/123456789)",
-                "korean": "게시물 URL 입력 (예: https://kemono.su/patreon/user/12345678/post/123456789)"
+                "korean": "게시물 URL 입력 (예: https://kemono.su/patreon/user/12345678/post/123456789)",
+                "chinese-simplified": "输入投稿 URL (例如: https://kemono.su/patreon/user/12345678/post/123456789)"
             },
             "post_queue": {
                 "english": "Post Queue",
                 "japanese": "投稿キュー",
-                "korean": "게시물 대기열"
+                "korean": "게시물 대기열",
+                "chinese-simplified": "投稿队列"
             },
             "files_to_download": {
                 "english": "Files to Download",
                 "japanese": "ダウンロードするファイル",
-                "korean": "다운로드할 파일"
+                "korean": "다운로드할 파일",
+                "chinese-simplified": "将要下载的文件"
             },
             "filter_by_type": {
                 "english": "Filter by Type",
                 "japanese": "タイプでフィルタリング",
-                "korean": "유형별 필터링"
+                "korean": "유형별 필터링",
+                "chinese-simplified": "按类型过滤"
             },
             "search_items": {
                 "english": "Search items...",
                 "japanese": "アイテムを検索...",
-                "korean": "항목 검색..."
+                "korean": "항목 검색...",
+                "chinese-simplified": "搜索项目..."
             },
             "check_all": {
                 "english": "Check ALL",
                 "japanese": "すべてチェック",
-                "korean": "모두 선택"
+                "korean": "모두 선택",
+                "chinese-simplified": "全选"
             },
             "download_all_links": {
                 "english": "Download All Links",
                 "japanese": "すべてのリンクをダウンロード",
-                "korean": "모든 링크 다운로드"
+                "korean": "모든 링크 다운로드",
+                "chinese-simplified": "下载所有链接"
             },
             "files_count": {
                 "english": "Files: {0}",
                 "japanese": "ファイル: {0}",
-                "korean": "파일: {0}"
+                "korean": "파일: {0}",
+                "chinese-simplified": "文件: {0}"
             },
             "file_progress": {
                 "english": "File Progress {0}%",
                 "japanese": "ファイル進捗 {0}%",
-                "korean": "파일 진행률 {0}%"
+                "korean": "파일 진행률 {0}%",
+                "chinese-simplified": "文件进度 {0}%"
             },
             "overall_progress": {
                 "english": "Overall Progress ({0}/{1} files, {2}/{3} posts)",
                 "japanese": "全体の進捗 ({0}/{1} ファイル, {2}/{3} 投稿)",
-                "korean": "전체 진행률 ({0}/{1} 파일, {2}/{3} 게시물)"
+                "korean": "전체 진행률 ({0}/{1} 파일, {2}/{3} 게시물)",
+                "chinese-simplified": "整体进度 ({0}/{1} 文件, {2}/{3} 投稿)"
             },
             
             # Creator Downloader tab
             "enter_creator_url": {
                 "english": "Enter creator URL (e.g., https://kemono.su/patreon/user/12345678)",
                 "japanese": "クリエイターURLを入力 (例: https://kemono.su/patreon/user/12345678)",
-                "korean": "크리에이터 URL 입력 (예: https://kemono.su/patreon/user/12345678)"
+                "korean": "크리에이터 URL 입력 (예: https://kemono.su/patreon/user/12345678)",
+                "chinese-simplified": "输入创作者 URL (例如: https://kemono.su/patreon/user/12345678)"
             },
             "creator_queue": {
                 "english": "Creator Queue",
                 "japanese": "クリエイターキュー",
-                "korean": "크리에이터 대기열"
+                "korean": "크리에이터 대기열",
+                "chinese-simplified": "创作者队列"
             },
             "download_options": {
                 "english": "Download Options",
                 "japanese": "ダウンロードオプション",
-                "korean": "다운로드 옵션"
+                "korean": "다운로드 옵션",
+                "chinese-simplified": "下载选项"
             },
             "main_file": {
                 "english": "Main File",
                 "japanese": "メインファイル",
-                "korean": "메인 파일"
+                "korean": "메인 파일",
+                "chinese-simplified": "主要文件"
             },
             "attachments": {
                 "english": "Attachments",
                 "japanese": "添付ファイル",
-                "korean": "첨부 파일"
+                "korean": "첨부 파일",
+                "chinese-simplified": "附件"
             },
             "content_images": {
                 "english": "Content Images",
                 "japanese": "コンテンツ画像",
-                "korean": "콘텐츠 이미지"
+                "korean": "콘텐츠 이미지",
+                "chinese-simplified": "内容图片"
             },
             "file_extensions": {
                 "english": "File Extensions",
                 "japanese": "ファイル拡張子",
-                "korean": "파일 확장자"
+                "korean": "파일 확장자",
+                "chinese-simplified": "文件扩展名"
             },
             "posts_to_download": {
                 "english": "Posts to Download",
                 "japanese": "ダウンロードする投稿",
-                "korean": "다운로드할 게시물"
+                "korean": "다운로드할 게시물",
+                "chinese-simplified": "将要下载的投稿"
             },
             "search_posts": {
                 "english": "Search posts...",
                 "japanese": "投稿を検索...",
-                "korean": "게시물 검색..."
+                "korean": "게시물 검색...",
+                "chinese-simplified": "搜索投稿..."
             },
             "posts_count": {
                 "english": "Posts: {0}",
                 "japanese": "投稿: {0}",
-                "korean": "게시물: {0}"
+                "korean": "게시물: {0}",
+                "chinese-simplified": "投稿: {0}"
             },
             
             # Settings tab
             "folder_settings": {
                 "english": "Folder Settings",
                 "japanese": "フォルダ設定",
-                "korean": "폴더 설정"
+                "korean": "폴더 설정",
+                "chinese-simplified": "文件夹设置"
             },
             "folder_name": {
                 "english": "Folder Name:",
                 "japanese": "フォルダ名:",
-                "korean": "폴더 이름:"
+                "korean": "폴더 이름:",
+                "chinese-simplified": "文件夹名称:"
             },
             "save_directory": {
                 "english": "Save Directory:",
                 "japanese": "保存ディレクトリ:",
-                "korean": "저장 디렉토리:"
+                "korean": "저장 디렉토리:",
+                "chinese-simplified": "保存目录:"
             },
             "download_settings": {
                 "english": "Download Settings",
                 "japanese": "ダウンロード設定",
-                "korean": "다운로드 설정"
+                "korean": "다운로드 설정",
+                "chinese-simplified": "下载设置"
             },
             "simultaneous_downloads": {
                 "english": "Simultaneous Downloads:",
                 "japanese": "同時ダウンロード数:",
-                "korean": "동시 다운로드:"
+                "korean": "동시 다운로드:",
+                "chinese-simplified": "并行下载数:"
             },
             "update_settings": {
                 "english": "Update Settings",
                 "japanese": "更新設定",
-                "korean": "업데이트 설정"
+                "korean": "업데이트 설정",
+                "chinese-simplified": "更新设置"
             },
             "auto_check_updates": {
                 "english": "Auto Check for Updates:",
                 "japanese": "自動更新チェック:",
-                "korean": "자동 업데이트 확인:"
+                "korean": "자동 업데이트 확인:",
+                "chinese-simplified": "自动检查更新:"
             },
             "language_settings": {
                 "english": "Language Settings",
                 "japanese": "言語設定",
-                "korean": "언어 설정"
+                "korean": "언어 설정",
+                "chinese-simplified": "语言设置"
             },
             "language": {
                 "english": "Language:",
                 "japanese": "言語:",
-                "korean": "언어:"
+                "korean": "언어:",
+                "chinese-simplified": "语言:"
             },
             "english": {
                 "english": "English",
                 "japanese": "英語",
-                "korean": "영어"
+                "korean": "영어",
+                "chinese-simplified": "英语"
             },
             "japanese": {
                 "english": "Japanese",
                 "japanese": "日本語",
-                "korean": "일본어"
+                "korean": "일본어",
+                "chinese-simplified": "日语"
             },
             "korean": {
                 "english": "Korean",
                 "japanese": "韓国語",
-                "korean": "한국어"
+                "korean": "한국어",
+                "chinese-simplified": "韩语"
+            },
+            "chinese-simplified": {
+                "english": "Chinese (Simplified)",
+                "japanese": "中国語 (簡体字)",
+                "korean": "중국어 (간체)",
+                "chinese-simplified": "中文 (简体)"
             },
             
             # Confirmation dialogs
             "confirm_settings_change": {
                 "english": "Confirm Settings Change",
                 "japanese": "設定変更の確認",
-                "korean": "설정 변경 확인"
+                "korean": "설정 변경 확인",
+                "chinese-simplified": "确认设置更改"
             },
             "confirm_settings_message": {
                 "english": "Are you sure you want to apply these settings?\n\nFolder Name: {0}\nSave Directory: {1}\nSimultaneous Downloads: {2}\nAuto Check Updates: {3}\nLanguage: {4}",
                 "japanese": "これらの設定を適用してもよろしいですか？\n\nフォルダ名: {0}\n保存ディレクトリ: {1}\n同時ダウンロード数: {2}\n自動更新チェック: {3}\n言語: {4}",
-                "korean": "이 설정을 적용하시겠습니까?\n\n폴더 이름: {0}\n저장 디렉토리: {1}\n동시 다운로드: {2}\n자동 업데이트 확인: {3}\n언어: {4}"
+                "korean": "이 설정을 적용하시겠습니까?\n\n폴더 이름: {0}\n저장 디렉토리: {1}\n동시 다운로드: {2}\n자동 업데이트 확인: {3}\n언어: {4}",
+                "chinese-simplified": "您确定要应用这些设置吗？\n\n文件夹名称: {0}\n保存目录: {1}\n并行下载数: {2}\n自动检查更新: {3}\n语言: {4}"
             },
             "enabled": {
                 "english": "Enabled",
                 "japanese": "有効",
-                "korean": "활성화"
+                "korean": "활성화",
+                "chinese-simplified": "启用"
             },
             "disabled": {
                 "english": "Disabled",
                 "japanese": "無効",
-                "korean": "비활성화"
+                "korean": "비활성화",
+                "chinese-simplified": "禁用"
             },
             "yes": {
                 "english": "Yes",
                 "japanese": "はい",
-                "korean": "예"
+                "korean": "예",
+                "chinese-simplified": "是"
             },
             "no": {
                 "english": "No",
                 "japanese": "いいえ",
-                "korean": "아니오"
+                "korean": "아니오",
+                "chinese-simplified": "否"
             },
             "ok": {
                 "english": "OK",
                 "japanese": "OK",
-                "korean": "확인"
+                "korean": "확인",
+                "chinese-simplified": "确定"
             },
             "settings_applied": {
                 "english": "Settings Applied",
                 "japanese": "設定が適用されました",
-                "korean": "설정 적용됨"
+                "korean": "설정 적용됨",
+                "chinese-simplified": "设置已应用"
             },
             "settings_applied_message": {
                 "english": "Settings have been successfully applied!\n\nFolder Name: {0}\nSave Directory: {1}\nSimultaneous Downloads: {2}\nAuto Check Updates: {3}\nLanguage: {4}",
                 "japanese": "設定が正常に適用されました！\n\nフォルダ名: {0}\n保存ディレクトリ: {1}\n同時ダウンロード数: {2}\n自動更新チェック: {3}\n言語: {4}",
-                "korean": "설정이 성공적으로 적용되었습니다!\n\n폴더 이름: {0}\n저장 디렉토리: {1}\n동시 다운로드: {2}\n자동 업데이트 확인: {3}\n언어: {4}"
+                "korean": "설정이 성공적으로 적용되었습니다!\n\n폴더 이름: {0}\n저장 디렉토리: {1}\n동시 다운로드: {2}\n자동 업데이트 확인: {3}\n언어: {4}",
+                "chinese-simplified": "设置已成功应用！\n\n文件夹名称: {0}\n保存目录: {1}\n并行下载数: {2}\n自动检查更新: {3}\n语言: {4}"
             },
             "confirm_removal": {
                 "english": "Confirm Removal",
                 "japanese": "削除の確認",
-                "korean": "제거 확인"
+                "korean": "제거 확인",
+                "chinese-simplified": "确认删除"
             },
             "confirm_removal_message": {
                 "english": "Are you sure you want to remove {0} from the queue?",
                 "japanese": "キューから {0} を削除してもよろしいですか？",
-                "korean": "대기열에서 {0}을(를) 제거하시겠습니까?"
+                "korean": "대기열에서 {0}을(를) 제거하시겠습니까?",
+                "chinese-simplified": "您确定要从队列中删除 {0} 吗？"
             },
             
             # Error messages
             "invalid_input": {
                 "english": "Invalid Input",
                 "japanese": "無効な入力",
-                "korean": "잘못된 입력"
+                "korean": "잘못된 입력",
+                "chinese-simplified": "无效输入"
             },
             "folder_name_empty": {
                 "english": "Folder name cannot be empty.",
                 "japanese": "フォルダ名は空にできません。",
-                "korean": "폴더 이름은 비워둘 수 없습니다."
+                "korean": "폴더 이름은 비워둘 수 없습니다.",
+                "chinese-simplified": "文件夹名称不能为空。"
             },
             "directory_not_exist": {
                 "english": "Selected directory does not exist.",
                 "japanese": "選択したディレクトリが存在しません。",
-                "korean": "선택한 디렉토리가 존재하지 않습니다."
+                "korean": "선택한 디렉토리가 존재하지 않습니다.",
+                "chinese-simplified": "所选目录不存在。"
             },
             "update_check_failed": {
                 "english": "Update Check Failed",
                 "japanese": "更新チェックに失敗しました",
-                "korean": "업데이트 확인 실패"
+                "korean": "업데이트 확인 실패",
+                "chinese-simplified": "检查更新失败"
             },
             "unable_check_updates": {
                 "english": "Unable to check for updates.",
                 "japanese": "更新を確認できません。",
-                "korean": "업데이트를 확인할 수 없습니다."
+                "korean": "업데이트를 확인할 수 없습니다.",
+                "chinese-simplified": "无法检查更新。"
             },
             "image_load_error": {
                 "english": "Image Load Error",
                 "japanese": "画像読み込みエラー",
-                "korean": "이미지 로드 오류"
+                "korean": "이미지 로드 오류",
+                "chinese-simplified": "图片加载错误"
             },
             "media_load_error": {
                 "english": "Media Load Error",
                 "japanese": "メディア読み込みエラー",
-                "korean": "미디어 로드 오류"
+                "korean": "미디어 로드 오류",
+                "chinese-simplified": "媒体加载错误"
             },
             
             # Update notification
             "update_available": {
                 "english": "Update Available",
                 "japanese": "更新があります",
-                "korean": "업데이트 가능"
+                "korean": "업데이트 가능",
+                "chinese-simplified": "更新可用"
             },
             "update_available_message": {
                 "english": "A new version ({0}) is available!",
                 "japanese": "新しいバージョン ({0}) が利用可能です！",
-                "korean": "새 버전({0})이 사용 가능합니다!"
+                "korean": "새 버전({0})이 사용 가능합니다!",
+                "chinese-simplified": "新版本 ({0}) 可用！"
             },
             "current_version": {
                 "english": "Current version: {0}",
                 "japanese": "現在のバージョン: {0}",
-                "korean": "현재 버전: {0}"
+                "korean": "현재 버전: {0}",
+                "chinese-simplified": "当前版本: {0}"
             },
             "click_release_page": {
                 "english": "Click here to visit the release page",
                 "japanese": "リリースページを訪問するにはここをクリック",
-                "korean": "릴리스 페이지를 방문하려면 여기를 클릭하세요"
+                "korean": "릴리스 페이지를 방문하려면 여기를 클릭하세요",
+                "chinese-simplified": "点击此处访问发布页面"
             },
             
             # Background tasks
             "detecting_post": {
                 "english": "Detecting post from link...",
                 "japanese": "リンクから投稿を検出中...",
-                "korean": "링크에서 게시물 감지 중..."
+                "korean": "링크에서 게시물 감지 중...",
+                "chinese-simplified": "从链接检测投稿..."
             },
             "detecting_posts": {
                 "english": "Detecting posts from link...",
                 "japanese": "リンクから投稿を検出中...",
-                "korean": "링크에서 게시물 감지 중..."
+                "korean": "링크에서 게시물 감지 중...",
+                "chinese-simplified": "从链接检测投稿..."
             },
             "validating_url": {
                 "english": "Validating URL...",
                 "japanese": "URLを検証中...",
-                "korean": "URL 검증 중..."
+                "korean": "URL 검증 중...",
+                "chinese-simplified": "验证 URL..."
             },
             "populating_posts": {
                 "english": "Populating posts...",
                 "japanese": "投稿を読み込み中...",
-                "korean": "게시물 채우는 중..."
+                "korean": "게시물 채우는 중...",
+                "chinese-simplified": "添加投稿信息..."
             },
             "filtering_posts": {
                 "english": "Filtering posts...",
                 "japanese": "投稿をフィルタリング中...",
-                "korean": "게시물 필터링 중..."
+                "korean": "게시물 필터링 중...",
+                "chinese-simplified": "过滤投稿..."
             },
             "preparing_files": {
                 "english": "Preparing files to download...",
                 "japanese": "ダウンロードするファイルを準備中...",
-                "korean": "다운로드할 파일 준비 중..."
+                "korean": "다운로드할 파일 준비 중...",
+                "chinese-simplified": "准备下载文件..."
             },
             "updating_checkboxes": {
                 "english": "Updating checkboxes...",
                 "japanese": "チェックボックスを更新中...",
-                "korean": "체크박스 업데이트 중..."
+                "korean": "체크박스 업데이트 중...",
+                "chinese-simplified": "更新复选框..."
             },
             "updating_download_mode": {
                 "english": "Updating download mode...",
                 "japanese": "ダウンロードモードを更新中...",
-                "korean": "다운로드 모드 업데이트 중..."
+                "korean": "다운로드 모드 업데이트 중...",
+                "chinese-simplified": "更新下载模式..."
             },
             "toggling_checkbox": {
                 "english": "Toggling checkbox...",
                 "japanese": "チェックボックスを切り替え中...",
-                "korean": "체크박스 토글 중..."
+                "korean": "체크박스 토글 중...",
+                "chinese-simplified": "切换复选框..."
             },
             "loading_image": {
                 "english": "Loading Image... ({0}%)",
                 "japanese": "画像を読み込み中... ({0}%)",
-                "korean": "이미지 로드 중... ({0}%)"
+                "korean": "이미지 로드 중... ({0}%)",
+                "chinese-simplified": "加载图片... ({0}%)"
             },
             "loading_image_simple": {
                 "english": "Loading Image...",
                 "japanese": "画像を読み込み中...",
-                "korean": "이미지 로드 중..."
+                "korean": "이미지 로드 중...",
+                "chinese-simplified": "加载图片..."
             },
             "error_loading_image": {
                 "english": "Error loading image",
                 "japanese": "画像の読み込みエラー",
-                "korean": "이미지 로드 오류"
+                "korean": "이미지 로드 오류",
+                "chinese-simplified": "加载图片时出错"
             },
             
             # Log messages
             "log_info": {
                 "english": "[INFO] {0}",
                 "japanese": "[情報] {0}",
-                "korean": "[정보] {0}"
+                "korean": "[정보] {0}",
+                "chinese-simplified": "[消息] {0}"
             },
             "log_warning": {
                 "english": "[WARNING] {0}",
                 "japanese": "[警告] {0}",
-                "korean": "[경고] {0}"
+                "korean": "[경고] {0}",
+                "chinese-simplified": "[警告] {0}"
             },
             "log_error": {
                 "english": "[ERROR] {0}",
                 "japanese": "[エラー] {0}",
-                "korean": "[오류] {0}"
+                "korean": "[오류] {0}",
+                "chinese-simplified": "[错误] {0}"
             },
             "log_debug": {
                 "english": "[DEBUG] {0}",
                 "japanese": "[デバッグ] {0}",
-                "korean": "[디버그] {0}"
+                "korean": "[디버그] {0}",
+                "chinese-simplified": "[调试] {0}"
             },
             
             # Common log messages
             "no_url_entered": {
                 "english": "No URL entered.",
                 "japanese": "URLが入力されていません。",
-                "korean": "URL이 입력되지 않았습니다."
+                "korean": "URL이 입력되지 않았습니다.",
+                "chinese-simplified": "未输入 URL。"
             },
             "url_already_in_queue": {
                 "english": "URL already in queue.",
                 "japanese": "URLはすでにキューにあります。",
-                "korean": "URL이 이미 대기열에 있습니다."
+                "korean": "URL이 이미 대기열에 있습니다.",
+                "chinese-simplified": "URL 已在队列中。"
             },
             "added_post_url": {
                 "english": "Added post URL to queue: {0}",
                 "japanese": "投稿URLをキューに追加しました: {0}",
-                "korean": "게시물 URL을 대기열에 추가했습니다: {0}"
+                "korean": "게시물 URL을 대기열에 추가했습니다: {0}",
+                "chinese-simplified": "已将投稿 URL 添加到队列: {0}"
             },
             "added_creator_url": {
                 "english": "Added creator URL to queue: {0}",
                 "japanese": "クリエイターURLをキューに追加しました: {0}",
-                "korean": "크리에이터 URL을 대기열에 추가했습니다: {0}"
+                "korean": "크리에이터 URL을 대기열에 추가했습니다: {0}",
+                "chinese-simplified": "已将创作者 URL 添加到队列: {0}"
             },
             "invalid_post_url": {
                 "english": "Invalid post URL or failed to fetch: {0}",
                 "japanese": "無効な投稿URLまたは取得に失敗しました: {0}",
-                "korean": "잘못된 게시물 URL 또는 가져오기 실패: {0}"
+                "korean": "잘못된 게시물 URL 또는 가져오기 실패: {0}",
+                "chinese-simplified": "无效的投稿 URL 或获取失败: {0}"
             },
             "invalid_creator_url": {
                 "english": "Invalid creator URL or failed to fetch: {0}",
                 "japanese": "無効なクリエイターURLまたは取得に失敗しました: {0}",
-                "korean": "잘못된 크리에이터 URL 또는 가져오기 실패: {0}"
+                "korean": "잘못된 크리에이터 URL 또는 가져오기 실패: {0}",
+                "chinese-simplified": "无效的创作者 URL 或获取失败: {0}"
             },
             "viewing_post": {
                 "english": "Viewing post: {0}",
                 "japanese": "投稿を表示中: {0}",
-                "korean": "게시물 보는 중: {0}"
+                "korean": "게시물 보는 중: {0}",
+                "chinese-simplified": "查看投稿: {0}"
             },
             "viewing_creator": {
                 "english": "Viewing creator: {0}",
                 "japanese": "クリエイターを表示中: {0}",
-                "korean": "크리에이터 보는 중: {0}"
+                "korean": "크리에이터 보는 중: {0}",
+                "chinese-simplified": "查看创作者: {0}"
             },
             "link_removed": {
                 "english": "Link ({0}) is removed from the queue.",
                 "japanese": "リンク ({0}) がキューから削除されました。",
-                "korean": "링크 ({0})가 대기열에서 제거되었습니다."
+                "korean": "링크 ({0})가 대기열에서 제거되었습니다.",
+                "chinese-simplified": "链接 ({0}) 已从队列中删除。"
             },
             "url_not_found": {
                 "english": "URL ({0}) not found in queue.",
                 "japanese": "URL ({0}) がキューに見つかりません。",
-                "korean": "URL ({0})이(가) 대기열에 없습니다."
+                "korean": "URL ({0})이(가) 대기열에 없습니다.",
+                "chinese-simplified": "队列中未找到 URL ({0})。"
             },
             "no_posts_queue": {
                 "english": "No posts in queue to download.",
                 "japanese": "ダウンロードするキューに投稿がありません。",
-                "korean": "다운로드할 게시물이 대기열에 없습니다."
+                "korean": "다운로드할 게시물이 대기열에 없습니다.",
+                "chinese-simplified": "下载队列中没有投稿。"
             },
             "no_creators_queue": {
                 "english": "No creators in queue to download.",
                 "japanese": "ダウンロードするキューにクリエイターがありません。",
-                "korean": "다운로드할 크리에이터가 대기열에 없습니다."
+                "korean": "다운로드할 크리에이터가 대기열에 없습니다.",
+                "chinese-simplified": "下载队列中没有创作者。"
             },
             "no_files_selected": {
                 "english": "No files selected for download.",
                 "japanese": "ダウンロードするファイルが選択されていません。",
-                "korean": "다운로드할 파일이 선택되지 않았습니다."
+                "korean": "다운로드할 파일이 선택되지 않았습니다.",
+                "chinese-simplified": "未选择要下载的文件。"
             },
             "no_posts_selected": {
                 "english": "No posts selected for download.",
                 "japanese": "ダウンロードする投稿が選択されていません。",
-                "korean": "다운로드할 게시물이 선택되지 않았습니다."
+                "korean": "다운로드할 게시물이 선택되지 않았습니다.",
+                "chinese-simplified": "未选择要下载的投稿。"
             },
             "preparing_files_post": {
                 "english": "Preparing files for currently viewed post: {0}",
                 "japanese": "現在表示中の投稿のファイルを準備中: {0}",
-                "korean": "현재 보고 있는 게시물의 파일 준비 중: {0}"
+                "korean": "현재 보고 있는 게시물의 파일 준비 중: {0}",
+                "chinese-simplified": "正在准备当前查看的投稿的文件: {0}"
             },
             "preparing_files_creator": {
                 "english": "Preparing files for currently viewed creator: {0}",
                 "japanese": "現在表示中のクリエイターのファイルを準備中: {0}",
-                "korean": "현재 보고 있는 크리에이터의 파일 준비 중: {0}"
+                "korean": "현재 보고 있는 크리에이터의 파일 준비 중: {0}",
+                "chinese-simplified": "正在准备当前查看的创作者的文件: {0}"
             },
             "preparing_files_all_posts": {
                 "english": "Preparing files for all posts in queue",
                 "japanese": "キュー内のすべての投稿のファイルを準備中",
-                "korean": "대기열의 모든 게시물에 대한 파일 준비 중"
+                "korean": "대기열의 모든 게시물에 대한 파일 준비 중",
+                "chinese-simplified": "正在准备队列中所有投稿的文件"
             },
             "preparing_files_all_creators": {
                 "english": "Preparing files for all creators in queue",
                 "japanese": "キュー内のすべてのクリエイターのファイルを準備中",
-                "korean": "대기열의 모든 크리에이터에 대한 파일 준비 중"
+                "korean": "대기열의 모든 크리에이터에 대한 파일 준비 중",
+                "chinese-simplified": "正在准备队列中所有创作者的文件"
             },
             "download_all_disabled": {
                 "english": "Download All Links disabled. Reverted to current post.",
                 "japanese": "すべてのリンクをダウンロードが無効になりました。現在の投稿に戻りました。",
-                "korean": "모든 링크 다운로드 비활성화됨. 현재 게시물로 되돌아갔습니다."
+                "korean": "모든 링크 다운로드 비활성화됨. 현재 게시물로 되돌아갔습니다.",
+                "chinese-simplified": "下载所有链接已禁用。退回到当前投稿。"
             },
             "download_process_ended": {
                 "english": "Download process ended",
                 "japanese": "ダウンロードプロセスが終了しました",
-                "korean": "다운로드 프로세스 종료"
+                "korean": "다운로드 프로세스 종료",
+                "chinese-simplified": "下载任务结束"
             },
             "download_process_completed": {
                 "english": "Download process completed",
                 "japanese": "ダウンロードプロセスが完了しました",
-                "korean": "다운로드 프로세스 완료"
+                "korean": "다운로드 프로세스 완료",
+                "chinese-simplified": "下载任务完成"
             },
             "downloads_complete": {
                 "english": "Downloads Complete",
                 "japanese": "ダウンロード完了",
-                "korean": "다운로드 완료"
+                "korean": "다운로드 완료",
+                "chinese-simplified": "下载完毕"
             },
             "downloads_terminated": {
                 "english": "Downloads Terminated",
                 "japanese": "ダウンロード中断",
-                "korean": "다운로드 중단됨"
+                "korean": "다운로드 중단됨",
+                "chinese-simplified": "下载终止"
             },
             "cancelling_downloads": {
                 "english": "Cancelling all downloads...",
                 "japanese": "すべてのダウンロードをキャンセル中...",
-                "korean": "모든 다운로드 취소 중..."
+                "korean": "모든 다운로드 취소 중...",
+                "chinese-simplified": "正在取消所有下载..."
             },
             "all_downloads_cancelled": {
                 "english": "All downloads cancelled by user",
                 "japanese": "すべてのダウンロードがユーザーによってキャンセルされました",
-                "korean": "모든 다운로드가 사용자에 의해 취소됨"
+                "korean": "모든 다운로드가 사용자에 의해 취소됨",
+                "chinese-simplified": "所有下载已被用户取消"
             },
             "preview_not_supported": {
                 "english": "Preview not supported for file type: {0} ({1})",
                 "japanese": "ファイルタイプのプレビューはサポートされていません: {0} ({1})",
-                "korean": "파일 유형에 대한 미리보기가 지원되지 않습니다: {0} ({1})"
+                "korean": "파일 유형에 대한 미리보기가 지원되지 않습니다: {0} ({1})",
+                "chinese-simplified": "不支持预览的文件类型: {0} ({1})"
             },
             "no_item_selected": {
                 "english": "No item selected for preview.",
                 "japanese": "プレビューするアイテムが選択されていません。",
-                "korean": "미리보기할 항목이 선택되지 않았습니다."
+                "korean": "미리보기할 항목이 선택되지 않았습니다.",
+                "chinese-simplified": "未选择要预览的项目。"
             },
             "file_already_downloaded": {
                 "english": "File {0} already downloaded at {1}, skipping.",
                 "japanese": "ファイル {0} はすでに {1} にダウンロードされています。スキップします。",
-                "korean": "파일 {0}이(가) 이미 {1}에 다운로드되었습니다. 건너뜁니다."
+                "korean": "파일 {0}이(가) 이미 {1}에 다운로드되었습니다. 건너뜁니다.",
+                "chinese-simplified": "文件 {0} 已在 {1} 下载，跳过。"
             },
             "starting_download": {
                 "english": "Starting download of file {0}/{1}: {2} to {3}",
                 "japanese": "ファイル {0}/{1} のダウンロードを開始: {2} を {3} に",
-                "korean": "파일 {0}/{1} 다운로드 시작: {2}을(를) {3}에"
+                "korean": "파일 {0}/{1} 다운로드 시작: {2}을(를) {3}에",
+                "chinese-simplified": "开始下载文件 {0}/{1}: {2} 到 {3}"
             },
             "successfully_downloaded": {
                 "english": "Successfully downloaded: {0}",
                 "japanese": "ダウンロード成功: {0}",
-                "korean": "다운로드 성공: {0}"
+                "korean": "다운로드 성공: {0}",
+                "chinese-simplified": "下载成功: {0}"
             },
             "download_interrupted": {
                 "english": "Download interrupted for {0}",
                 "japanese": "{0} のダウンロードが中断されました",
-                "korean": "{0}에 대한 다운로드가 중단됨"
+                "korean": "{0}에 대한 다운로드가 중단됨",
+                "chinese-simplified": "{0} 的下载已中断"
             },
             "error_downloading": {
                 "english": "Error downloading {0}: {1}",
                 "japanese": "{0} のダウンロード中にエラー: {1}",
-                "korean": "{0} 다운로드 중 오류: {1}"
+                "korean": "{0} 다운로드 중 오류: {1}",
+                "chinese-simplified": "下载 {0} 时出错: {1}"
             },
             "post_fully_downloaded": {
                 "english": "Post {0} fully downloaded.",
                 "japanese": "投稿 {0} が完全にダウンロードされました。",
-                "korean": "게시물 {0}이(가) 완전히 다운로드되었습니다."
+                "korean": "게시물 {0}이(가) 완전히 다운로드되었습니다.",
+                "chinese-simplified": "投稿 {0} 已完全下载。"
             },
             "all_files_downloaded": {
                 "english": "All files for post {0} have been downloaded",
                 "japanese": "投稿 {0} のすべてのファイルがダウンロードされました",
-                "korean": "게시물 {0}의 모든 파일이 다운로드되었습니다"
+                "korean": "게시물 {0}의 모든 파일이 다운로드되었습니다",
+                "chinese-simplified": "所有文件已下载完毕: {0}"
             },
             "no_files_selected_post": {
                 "english": "No files selected for download for this post.",
                 "japanese": "この投稿ではダウンロードするファイルが選択されていません。",
-                "korean": "이 게시물에 대해 다운로드할 파일이 선택되지 않았습니다."
+                "korean": "이 게시물에 대해 다운로드할 파일이 선택되지 않았습니다.",
+                "chinese-simplified": "未选择要下载的文件。"
             },
             "language_changed": {
                 "english": "Language changed to English",
                 "japanese": "言語が日本語に変更されました",
-                "korean": "언어가 한국어로 변경되었습니다"
+                "korean": "언어가 한국어로 변경되었습니다",
+                "chinese-simplified": "语言已更改为中文 (简体)"
             },
             # Media preview
             "media_preview": {
                 "english": "Media Preview",
                 "japanese": "メディアプレビュー",
-                "korean": "미디어 미리보기"
+                "korean": "미디어 미리보기",
+                "chinese-simplified": "媒体预览"
             },
             "fit": {
                 "english": "Fit",
                 "japanese": "フィット",
-                "korean": "맞춤"
+                "korean": "맞춤",
+                "chinese-simplified": "适合窗口"
             },
             "stretch": {
                 "english": "Stretch",
                 "japanese": "引き伸ばし",
-                "korean": "늘이기"
+                "korean": "늘이기",
+                "chinese-simplified": "拉伸"
             },
             "original": {
                 "english": "Original",
                 "japanese": "オリジナル",
-                "korean": "원본"
+                "korean": "원본",
+                "chinese-simplified": "原始大小"
             },
             "full_screen": {
                 "english": "Full Screen (Modal)",
                 "japanese": "全画面 (モーダル)",
-                "korean": "전체 화면 (모달)"
+                "korean": "전체 화면 (모달)",
+                "chinese-simplified": "全屏 (模态)"
             },
             "audio_playback": {
                 "english": "Audio Playback",
                 "japanese": "オーディオ再生",
-                "korean": "오디오 재생"
+                "korean": "오디오 재생",
+                "chinese-simplified": "音频播放"
             },
             "error_loading_media": {
                 "english": "Error loading media",
                 "japanese": "メディアの読み込みエラー",
-                "korean": "미디어 로드 오류"
+                "korean": "미디어 로드 오류",
+                "chinese-simplified": "加载媒体时出错"
             },
             # Error messages for media
             "invalid_url_format": {
                 "english": "Invalid URL format. Expected: https://kemono.su/[service]/user/[user_id]/post/[post_id]",
                 "japanese": "無効なURL形式。期待される形式: https://kemono.su/[service]/user/[user_id]/post/[post_id]",
-                "korean": "잘못된 URL 형식. 예상 형식: https://kemono.su/[service]/user/[user_id]/post/[post_id]"
+                "korean": "잘못된 URL 형식. 예상 형식: https://kemono.su/[service]/user/[user_id]/post/[post_id]",
+                "chinese-simplified": "无效的 URL 格式。预期格式: https://kemono.su/[service]/user/[user_id]/post/[post_id]"
             },
             "failed_to_fetch_post": {
                 "english": "Failed to fetch post - Status code: {0}",
                 "japanese": "投稿の取得に失敗しました - ステータスコード: {0}",
-                "korean": "게시물 가져오기 실패 - 상태 코드: {0}"
+                "korean": "게시물 가져오기 실패 - 상태 코드: {0}",
+                "chinese-simplified": "获取投稿失败 - 状态码: {0}"
             },
             "failed_to_fetch_post_error": {
                 "english": "Failed to fetch post: {0}",
                 "japanese": "投稿の取得に失敗しました: {0}",
-                "korean": "게시물 가져오기 실패: {0}"
+                "korean": "게시물 가져오기 실패: {0}",
+                "chinese-simplified": "获取投稿失败: {0}"
             },
             "no_valid_post_data": {
                 "english": "No valid post data returned",
                 "japanese": "有効な投稿データが返されませんでした",
-                "korean": "유효한 게시물 데이터가 반환되지 않았습니다"
+                "korean": "유효한 게시물 데이터가 반환되지 않았습니다",
+                "chinese-simplified": "未返回有效的投稿数据"
             },
             "invalid_image_data": {
                 "english": "Invalid or corrupted image data",
                 "japanese": "無効または破損した画像データ",
-                "korean": "잘못되거나 손상된 이미지 데이터"
+                "korean": "잘못되거나 손상된 이미지 데이터",
+                "chinese-simplified": "无效或损坏的图像数据"
             },
             "failed_to_download": {
                 "english": "Failed to download file from",
                 "japanese": "ファイルのダウンロードに失敗しました",
-                "korean": "파일 다운로드 실패"
+                "korean": "파일 다운로드 실패",
+                "chinese-simplified": "下载文件失败"
             },
             "unexpected_error": {
                 "english": "Unexpected error while processing file from",
                 "japanese": "ファイル処理中に予期しないエラーが発生しました",
-                "korean": "파일 처리 중 예기치 않은 오류 발생"
+                "korean": "파일 처리 중 예기치 않은 오류 발생",
+                "chinese-simplified": "处理文件时发生意外错误"
             },
             "failed_to_load_gif": {
                 "english": "Failed to load GIF from {0}: Invalid or corrupted GIF data",
                 "japanese": "{0} からGIFを読み込めませんでした: 無効または破損したGIFデータ",
-                "korean": "{0}에서 GIF 로드 실패: 잘못되거나 손상된 GIF 데이터"
+                "korean": "{0}에서 GIF 로드 실패: 잘못되거나 손상된 GIF 데이터",
+                "chinese-simplified": "无法从 {0} 加载 GIF: 无效或损坏的 GIF 数据"
             },
             "no_internet_connection": {
                 "english": "No internet connection. Update check failed.",
                 "japanese": "インターネット接続がありません。更新チェックに失敗しました。",
-                "korean": "인터넷 연결이 없습니다. 업데이트 확인 실패."
+                "korean": "인터넷 연결이 없습니다. 업데이트 확인 실패.",
+                "chinese-simplified": "没有互联网连接。检查更新失败。"
             },
             "failed_to_check_updates": {
                 "english": "Failed to check for updates",
                 "japanese": "更新の確認に失敗しました",
-                "korean": "업데이트 확인 실패"
+                "korean": "업데이트 확인 실패",
+                "chinese-simplified": "检查更新失败"
             },
             
             # Help Tab Translations (expanded with full content)
             "help_title": {
                 "english": "Kemono Downloader User Manual",
                 "japanese": "ケモノダウンローダーユーザーマニュアル",
-                "korean": "케모노 다운로더 사용자 매뉴얼"
+                "korean": "케모노 다운로더 사용자 매뉴얼",
+                "chinese-simplified": "Kemono 下载器用户手册"
             },
             "help_intro": {
                 "english": "Welcome to the Kemono Downloader, a powerful tool designed to help you download content from Kemono.su, "
@@ -848,7 +1007,8 @@ class KDLanguage:
             "help_getting_started_title": {
                 "english": "1. Getting Started",
                 "japanese": "1. はじめに",
-                "korean": "1. 시작하기"
+                "korean": "1. 시작하기",
+                "chinese-simplified": "1. 开始使用"
             },
             "help_getting_started_text": {
                 "english": "<b>1.1 Launching the Application</b><br>"
@@ -915,7 +1075,8 @@ class KDLanguage:
             "help_post_downloader_title": {
                 "english": "2. Using the Post Downloader Tab",
                 "japanese": "2. 投稿ダウンローダータブの使用",
-                "korean": "2. 게시물 다운로더 탭 사용"
+                "korean": "2. 게시물 다운로더 탭 사용",
+                "chinese-simplified": "2. 使用投稿下载器选项卡"
             },
             "help_post_downloader_text": {
                 "english": "The Post Downloader tab is designed for downloading content from specific Kemono.su posts. You can add multiple posts to a queue, view their contents, select files to download, and monitor the download progress. Below are the detailed steps to use this tab effectively:<br><br>"
@@ -1066,7 +1227,8 @@ class KDLanguage:
             "help_creator_downloader_title": {
                 "english": "3. Using the Creator Downloader Tab",
                 "japanese": "3. クリエイターダウンローダータブの使用",
-                "korean": "3. 크리에이터 다운로더 탭 사용"
+                "korean": "3. 크리에이터 다운로더 탭 사용",
+                "chinese-simplified": "3. 使用创作者下载器选项卡"
             },
             "help_creator_downloader_text": {
                 "english": "The Creator Downloader tab is designed for bulk downloading content from a creator's entire profile on Kemono.su. You can queue multiple creators, fetch their posts, select specific content to download, and monitor the progress. This tab is ideal for archiving a creator's work or downloading content from multiple creators at once. Below are the detailed steps to use this tab effectively:<br><br>"
@@ -1263,7 +1425,8 @@ class KDLanguage:
             "help_settings_title": {
                 "english": "4. Using the Settings Tab",
                 "japanese": "4. 設定タブの使用",
-                "korean": "4. 설정 탭 사용"
+                "korean": "4. 설정 탭 사용",
+                "chinese-simplified": "4. 使用设置选项卡"
             },
             "help_settings_text": {
                 "english": "The Settings tab allows you to customize the behavior and appearance of the Kemono Downloader to suit your preferences. From changing the save directory to adjusting the number of simultaneous downloads, this tab provides all the tools you need to optimize your experience. Below are the detailed options available in this tab:<br><br>"
@@ -1321,7 +1484,8 @@ class KDLanguage:
             "help_help_tab_title": {
                 "english": "5. Using the Help Tab",
                 "japanese": "5. ヘルプタブの使用",
-                "korean": "5. 도움말 탭 사용"
+                "korean": "5. 도움말 탭 사용",
+                "chinese-simplified": "5. 使用帮助选项卡"
             },
             "help_help_tab_text": {
                 "english": "The Help tab provides a comprehensive user manual for the Kemono Downloader, guiding you through every aspect of the application. Whether you’re a new user or need a refresher, this tab is your go-to resource for understanding how to use the tool effectively.<br><br>"
@@ -1391,7 +1555,8 @@ class KDLanguage:
             "help_troubleshooting_title": {
                 "english": "6. Troubleshooting",
                 "japanese": "6. トラブルシューティング",
-                "korean": "6. 문제 해결"
+                "korean": "6. 문제 해결",
+                "chinese-simplified": "6. 故障排除"
             },
             "help_troubleshooting_text": {
                 "english": "This section addresses common issues you might encounter while using the Kemono Downloader and provides solutions to resolve them. If your problem isn’t listed here, refer to the 'Contact and Support' section for further assistance.<br><br>"
@@ -1464,7 +1629,8 @@ class KDLanguage:
             "help_support_title": {
                 "english": "7. Contact and Support",
                 "japanese": "7. 連絡とサポート",
-                "korean": "7. 연락 및 지원"
+                "korean": "7. 연락 및 지원",
+                "chinese-simplified": "7. 联系和支持"
             },
             "help_support_text": {
                 "english": "If you need further assistance or want to report a bug, this section provides the necessary information to get help.<br><br>"
@@ -1551,12 +1717,12 @@ class KDLanguage:
         Set the current language.
         
         Args:
-            language (str): Language to set ('english', 'japanese', or 'korean')
+            language (str): Language to set ('english', 'japanese', 'korean', or 'chinese-simplified')
             
         Returns:
             bool: True if language was changed, False otherwise
         """
-        if language not in ["english", "japanese", "korean"]:
+        if language not in ["english", "japanese", "korean", "chinese-simplified"]:
             return False
             
         if language != self.current_language:
@@ -1596,7 +1762,7 @@ class KDLanguage:
         Returns:
             list: List of available languages
         """
-        return ["english", "japanese", "korean"]
+        return ["english", "japanese", "korean", "chinese-simplified"]
 
 
 language_manager = KDLanguage()

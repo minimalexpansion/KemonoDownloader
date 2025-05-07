@@ -171,6 +171,7 @@ class SettingsTab(QWidget):
         self.language_combo.addItem(translate("english"), "english")
         self.language_combo.addItem(translate("japanese"), "japanese")
         self.language_combo.addItem(translate("korean"), "korean")
+        self.language_combo.addItem(translate("chinese-simplified"), "chinese-simplified")
         
         for i in range(self.language_combo.count()):
             if self.language_combo.itemData(i) == current_language:
