@@ -135,6 +135,10 @@ We are committed to fostering a welcoming and respectful community around Kemono
 - [Security](#security)
 - [License](#license)
 - [Dependencies](#dependencies)
+- [Special Thanks & Contributors](#special-thanks--contributors)
+  - [Contributor Profiles](#contributor-profiles)
+  - [Project Star Statistics](#project-star-statistics)
+  - [Star History](#star-history)
 
 ## Features
 - **Post Downloading**: Easily download files from specific Kemono.su posts using their URLs.
@@ -161,8 +165,7 @@ Kemono Downloader is now packaged using [Briefcase](https://briefcase.readthedoc
    ```
 3. Install Briefcase and dependencies:
    ```bash
-   pip install briefcase
-   pip install -r requirements.txt
+   python -m pip install -r requirements.txt
    ```
 4. Initialize the Briefcase project (if not already set up):
    ```bash
@@ -172,10 +175,12 @@ Kemono Downloader is now packaged using [Briefcase](https://briefcase.readthedoc
    - **Windows**: `briefcase build windows`
    - **macOS**: `briefcase build macos`
    - **Linux**: `briefcase build linux`
+   - **General**: `briefcase build` *(Recommended)*
 6. Run the application:
    - **Windows**: `briefcase run windows`
    - **macOS**: `briefcase run macos`
    - **Linux**: `briefcase run linux`
+   - **General**: `briefcase dev` *(Recommended)*
    - **Note**: An internet connection is required to fetch content from Kemono.su.
 
 ### Pre-Compiled Binaries
@@ -275,6 +280,32 @@ To build from source, install the following Python packages:
 - `briefcase` (for packaging the app)
 
 Create a `requirements.txt` file with these dependencies and run `pip install -r requirements.txt`.
+
+---
+
+## Special Thanks & Contributors
+
+We’re incredibly grateful to our amazing contributors who have helped shape **Kemono Downloader** into what it is today. 
+
+## Contributor Profiles
+
+<p align="left">
+  <a href="https://github.com/VoxDroid">
+    <img src="https://github.com/VoxDroid.png" width="60px" style="border-radius: 50%;"/>
+  </a>
+  <a href="https://github.com/detached64">
+    <img src="https://github.com/detached64.png" width="60px" style="border-radius: 50%;"/>
+  </a>
+</p>
+
+
+## Project Star Statistics
+
+Check out how **Kemono Downloader** is doing in the GitHub community!
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=VoxDroid/KemonoDownloader&type=Date)](https://www.star-history.com/#VoxDroid/KemonoDownloader&Date)
 
 ---
 
