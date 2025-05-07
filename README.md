@@ -146,7 +146,7 @@ We are committed to fostering a welcoming and respectful community around Kemono
 - **Detailed Logging**: Track progress and troubleshoot issues with an in-app console.
 - **Cross-Platform UI**: Built with PyQt6 for a modern, intuitive interface compatible with multiple operating systems.
 - **Media Playback**: Preview videos and GIFs with built-in playback controls (play, pause, seek, volume).
-- **Multilingual Support**: Switch between English, Japanese, and Korean languages dynamically.
+- **Multilingual Support**: Switch between English, Japanese, Korean and Simplified Chinese languages dynamically.
 - **Automatic Updates**: Check for new versions on startup with optional notifications.
 
 ## Installation
