@@ -42,14 +42,14 @@ user_agent = ua.chrome
 
 HEADERS = {
     "User-Agent": user_agent,
-    "Referer": "https://kemono.su/", 
+    "Referer": "https://coomer.su/", 
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
     "Accept-Language": accept_language, 
     "Accept-Encoding": "gzip, deflate",  
     "Connection": "keep-alive",
     "Upgrade-Insecure-Requests": "1"
 }
-API_BASE = "https://kemono.su/api/v1"
+API_BASE = "https://coomer.su/api/v1"
 
 class PreviewThread(QThread):
     preview_ready = pyqtSignal(str, object)
@@ -152,7 +152,7 @@ class PostDetectionThread(QThread):
             return
         self.log.emit(translate("log_info", f"Checking creator with URL: {self.url}"), "INFO")
         parts = self.url.split('/')
-        if len(parts) < 5 or 'kemono.su' not in self.url or parts[-2] != 'user':
+        if len(parts) < 5 or 'coomer.su' not in self.url or parts[-2] != 'user':
             self.error.emit(translate("invalid_url_format"))
             return
         service, creator_id = parts[-3], parts[-1]
@@ -248,14 +248,14 @@ class PostDetectionThread(QThread):
                 thumbnail_url = None
                 if 'file' in post and post['file'] and 'path' in post['file']:
                     if post['file']['path'].lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
-                        thumbnail_url = urljoin("https://kemono.su", post['file']['path'])
+                        thumbnail_url = urljoin("https://coomer.su", post['file']['path'])
                 if not thumbnail_url and 'attachments' in post:
                     for attachment in post['attachments']:
                         if isinstance(attachment, dict) and 'path' in attachment and attachment['path'].lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
-                            thumbnail_url = urljoin("https://kemono.su", attachment['path'])
+                            thumbnail_url = urljoin("https://coomer.su", attachment['path'])
                             break
                 if not thumbnail_url and 'file' in post and post['file'] and 'path' in post['file']:
-                    thumbnail_url = urljoin("https://kemono.su", post['file']['path'])
+                    thumbnail_url = urljoin("https://coomer.su", post['file']['path'])
                 detected_posts.append((title, (post_id, thumbnail_url)))
 
             self.log.emit(translate("log_info", f"Total posts fetched for creator {self.url}: {len(detected_posts)}"), "INFO")
@@ -343,7 +343,7 @@ class FilePreparationThread(QThread):
             file_path = post['file']['path']
             file_name = post['file'].get('name', '')
             file_ext = get_effective_extension(file_path, file_name)
-            file_url = urljoin("https://kemono.su", file_path)
+            file_url = urljoin("https://coomer.su", file_path)
             if 'f=' not in file_url and file_name:
                 file_url += f"?f={file_name}"
             self.log.emit(translate("log_debug", f"Checking main file: {file_name} ({file_ext})"), "INFO")
@@ -361,7 +361,7 @@ class FilePreparationThread(QThread):
                     attachment_path = attachment['path']
                     attachment_name = attachment.get('name', '')
                     attachment_ext = get_effective_extension(attachment_path, attachment_name)
-                    attachment_url = urljoin("https://kemono.su", attachment_path)
+                    attachment_url = urljoin("https://coomer.su", attachment_path)
                     if 'f=' not in attachment_url and attachment_name:
                         attachment_url += f"?f={attachment_name}"
                     self.log.emit(translate("log_debug", f"Checking attachment: {attachment_name} ({attachment_ext})"), "INFO")
@@ -376,7 +376,7 @@ class FilePreparationThread(QThread):
         if self.creator_content_check and 'content' in post and post['content']:
             soup = BeautifulSoup(post['content'], 'html.parser')
             for img in soup.select('img[src]'):
-                img_url = urljoin("https://kemono.su", img['src'])
+                img_url = urljoin("https://coomer.su", img['src'])
                 img_ext = os.path.splitext(img_url)[1].lower()
                 img_name = os.path.basename(img_url)
                 self.log.emit(translate("log_debug", f"Checking content image: {img_name} ({img_ext})"), "INFO")
@@ -794,7 +794,7 @@ class ValidationThread(QThread):
             return
         
         parts = self.url.split('/')
-        if len(parts) < 5 or 'kemono.su' not in self.url or parts[-2] != 'user':
+        if len(parts) < 5 or 'coomer.su' not in self.url or parts[-2] != 'user':
             self.log.emit(translate("log_error", f"Invalid URL format: {self.url}"), "ERROR")
             self.result.emit(False)
             return
